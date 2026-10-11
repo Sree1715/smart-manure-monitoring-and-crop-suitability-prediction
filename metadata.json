@@ -1,0 +1,8 @@
+{
+  "name": "Smart Manure monitoring and Crop suitability Predictiion",
+  "description": "",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

@@ -1,0 +1,9 @@
+crop,ph_min,ph_max,n_kg_ha,p_kg_ha,p_basis,k_kg_ha,k_basis,temp_min_c,temp_max_c,source_title,source_url
+Wheat,6.0,7.5,120,60,P2O5,40,K2O,15.0,28.0,ICAR Handbook of Agriculture,https://icar.org.in
+Rice,5.5,7.0,150,50,P2O5,50,K2O,22.0,35.0,ICAR Rice Package of Practices,https://icar.org.in
+Sugarcane,6.5,8.0,250,110,P2O5,120,K2O,20.0,38.0,ICAR Sugarcane Breeding Institute,https://sugarcane.icar.gov.in
+Maize,5.8,7.5,120,60,P2O5,50,K2O,18.0,32.0,ICAR-IIMR Maize Production Guidelines,https://iimr.icar.gov.in
+Cotton,6.5,8.0,120,60,P2O5,60,K2O,21.0,36.0,Central Institute for Cotton Research,https://cicr.org.in
+Pulses,6.0,7.5,25,50,P2O5,20,K2O,18.0,30.0,ICAR-IIPR Pulses Agronomy,https://iipr.icar.gov.in
+Mustard,6.0,7.5,80,40,P2O5,40,K2O,10.0,25.0,Directorate of Rapeseed-Mustard Research,https://drmr.icar.gov.in
+Potato,5.0,6.5,180,100,P2O5,150,K2O,15.0,24.0,Central Potato Research Institute,https://cpri.icar.gov.in

@@ -1,0 +1,5 @@
+manure_type,n_pct_min,n_pct_max,p_pct_min,p_pct_max,p_basis,k_pct_min,k_pct_max,k_basis,moisture_pct_min,moisture_pct_max,organic_carbon_pct_min,organic_carbon_pct_max,ph_min,ph_max,source_title,source_url,source_year
+liquid_biogas_slurry,1.4,2.2,0.6,1.2,P,1.0,1.8,K,85.0,95.0,8.0,15.0,6.8,7.8,ICAR Organic Farming Standards,https://icar.org.in,2022
+solid_fym,0.5,1.5,0.4,0.8,P2O5,0.5,1.2,K2O,50.0,65.0,12.0,18.0,6.5,7.8,ICAR Organic Farming Standards,https://icar.org.in,2022
+solid_vermicompost,1.5,2.5,0.9,1.7,P2O5,1.2,2.2,K2O,40.0,55.0,16.0,24.0,6.8,7.6,ICAR Organic Farming Standards,https://icar.org.in,2022
+solid_poultry_manure,2.0,3.5,1.5,2.5,P2O5,1.4,2.4,K2O,35.0,50.0,18.0,26.0,6.2,7.5,ICAR Organic Farming Standards,https://icar.org.in,2022
