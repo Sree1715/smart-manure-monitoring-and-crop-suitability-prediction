@@ -5,17 +5,18 @@ import Button from '../components/Button.jsx'
 import Card from '../components/Card.jsx'
 import api from '../services/api.js'
 
+// Field definitions with realistic agronomic min/max bounds
 const LIQUID_FIELDS = [
-  { name: 'liquidPh', label: 'Liquid Manure pH', placeholder: 'e.g. 6.8' },
-  { name: 'liquidNitrogen', label: 'Nitrogen (%)', placeholder: 'e.g. 1.4' },
-  { name: 'liquidPhosphorus', label: 'Phosphorus (%)', placeholder: 'e.g. 0.6' },
-  { name: 'liquidPotassium', label: 'Potassium (%)', placeholder: 'e.g. 1.1' },
+  { name: 'liquidPh',         label: 'Liquid Manure pH',     placeholder: 'e.g. 6.8',  min: 4.5,  max: 8.8,  step: '0.01', hint: '4.5 – 8.8' },
+  { name: 'liquidNitrogen',   label: 'Nitrogen (%)',          placeholder: 'e.g. 1.4',  min: 0.05, max: 5.5,  step: '0.01', hint: '0.05 – 5.5%' },
+  { name: 'liquidPhosphorus', label: 'Phosphorus (%)',        placeholder: 'e.g. 0.6',  min: 0.05, max: 2.5,  step: '0.01', hint: '0.05 – 2.5%' },
+  { name: 'liquidPotassium',  label: 'Potassium (%)',         placeholder: 'e.g. 1.1',  min: 0.05, max: 2.5,  step: '0.01', hint: '0.05 – 2.5%' },
 ]
 
 const SOLID_FIELDS = [
-  { name: 'solidMoisture', label: 'Moisture (%)', placeholder: 'e.g. 58' },
-  { name: 'solidTemperature', label: 'Temperature (°C)', placeholder: 'e.g. 28' },
-  { name: 'solidCarbon', label: 'Organic Carbon (%) [Lab/Manual]', placeholder: 'e.g. 14.5' },
+  { name: 'solidMoisture',    label: 'Moisture (%)',                        placeholder: 'e.g. 58',   min: 15,  max: 90,  step: '0.1', hint: '15 – 90%' },
+  { name: 'solidTemperature', label: 'Temperature (°C)',                   placeholder: 'e.g. 26',   min: 8,   max: 42,  step: '0.1', hint: '8 – 42°C' },
+  { name: 'solidCarbon',      label: 'Organic Carbon (%) [Lab/Manual]',    placeholder: 'e.g. 14.5', min: 2,   max: 40,  step: '0.1', hint: '2 – 40%' },
 ]
 
 export default function CropPrediction() {
@@ -99,19 +100,23 @@ export default function CropPrediction() {
                 <p className="text-xs text-slate-400">pH probe (ADC1) & RS485 NPK sensor</p>
               </div>
             </div>
-            <div className="grid sm:grid-cols-2 gap-4">
+          <div className="grid sm:grid-cols-2 gap-4">
               {LIQUID_FIELDS.map((f) => (
-                <Input
-                  key={f.name}
-                  label={f.label}
-                  name={f.name}
-                  type="number"
-                  step="0.01"
-                  placeholder={f.placeholder}
-                  value={form[f.name] || ''}
-                  onChange={handleChange}
-                  required
-                />
+                <div key={f.name}>
+                  <Input
+                    label={f.label}
+                    name={f.name}
+                    type="number"
+                    step={f.step}
+                    min={f.min}
+                    max={f.max}
+                    placeholder={f.placeholder}
+                    value={form[f.name] || ''}
+                    onChange={handleChange}
+                    required
+                  />
+                  <p className="text-[10px] text-slate-400 mt-0.5 pl-1">Valid range: {f.hint}</p>
+                </div>
               ))}
             </div>
           </div>
@@ -126,19 +131,23 @@ export default function CropPrediction() {
                 <p className="text-xs text-slate-400">Capacitive moisture (ADC1), DS18B20 temp, & lab organic carbon %</p>
               </div>
             </div>
-            <div className="grid sm:grid-cols-2 gap-4">
+          <div className="grid sm:grid-cols-2 gap-4">
               {SOLID_FIELDS.map((f) => (
-                <Input
-                  key={f.name}
-                  label={f.label}
-                  name={f.name}
-                  type="number"
-                  step="0.1"
-                  placeholder={f.placeholder}
-                  value={form[f.name] || ''}
-                  onChange={handleChange}
-                  required
-                />
+                <div key={f.name}>
+                  <Input
+                    label={f.label}
+                    name={f.name}
+                    type="number"
+                    step={f.step}
+                    min={f.min}
+                    max={f.max}
+                    placeholder={f.placeholder}
+                    value={form[f.name] || ''}
+                    onChange={handleChange}
+                    required
+                  />
+                  <p className="text-[10px] text-slate-400 mt-0.5 pl-1">Valid range: {f.hint}</p>
+                </div>
               ))}
             </div>
           </div>
@@ -173,16 +182,72 @@ export default function CropPrediction() {
               </div>
             ) : (
               <div className="py-2 text-left animate-fade-in space-y-4">
+
+                {/* Out-of-range banner */}
+                {prediction.out_of_range_params?.length > 0 && (
+                  <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-xs text-red-800">
+                    <p className="font-semibold mb-1">⚠️ Input Values Out of Range</p>
+                    <p className="mb-1.5 text-red-700">The following values are outside realistic manure ranges:</p>
+                    <ul className="list-disc pl-4 space-y-0.5 text-red-700">
+                      {prediction.out_of_range_params.map((v, i) => <li key={i}>{v}</li>)}
+                    </ul>
+                    <p className="mt-2 text-[10px] text-red-600 font-medium">
+                      Use realistic values: N 0.05–5.5%, P 0.05–2.5%, K 0.05–2.5%, pH 4.5–8.8, Temp 8–42°C, Moisture 15–90%, OC 2–40%
+                    </p>
+                  </div>
+                )}
+
                 <div className="text-center">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-600 to-secondary-600 flex items-center justify-center mx-auto mb-3 shadow-md">
-                    <Sparkles className="w-7 h-7 text-white" />
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-md ${prediction.confidence === 0 ? 'bg-red-100' : 'bg-gradient-to-br from-primary-600 to-secondary-600'}`}>
+                    <Sparkles className={`w-7 h-7 ${prediction.confidence === 0 ? 'text-red-400' : 'text-white'}`} />
                   </div>
                   <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Optimal Recommended Crop</p>
-                  <p className="text-3xl font-extrabold text-slate-900 mb-1">{prediction.recommended_crop}</p>
-                  <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
-                    Confidence: {prediction.confidence}%
-                  </span>
+                  <p className={`text-2xl font-extrabold mb-1 ${prediction.confidence === 0 ? 'text-red-500' : 'text-slate-900'}`}>{prediction.recommended_crop}</p>
+                  {prediction.confidence > 0 && (
+                    <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                      Confidence: {prediction.confidence}%
+                    </span>
+                  )}
                 </div>
+
+                {prediction.agronomic_rationale && (
+                  <div className={`border rounded-xl p-3 text-xs leading-relaxed ${prediction.confidence === 0 ? 'bg-red-50 border-red-100 text-red-900' : 'bg-primary-50/60 border-primary-100 text-primary-900'}`}>
+                    <p className={`font-semibold mb-1 ${prediction.confidence === 0 ? 'text-red-700' : 'text-primary-700'}`}>
+                      {prediction.confidence === 0 ? '⚠️ Cannot Predict' : `Why ${prediction.recommended_crop}?`}
+                    </p>
+                    <p>{prediction.agronomic_rationale}</p>
+                  </div>
+                )}
+
+                {prediction.nutrient_fit && (
+                  <div className="border-t border-slate-100 pt-3">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Nutrient Fit — {prediction.recommended_crop}</p>
+                    <div className="space-y-1.5">
+                      {[
+                        { label: 'Nitrogen (N)', key: 'nitrogen_fit' },
+                        { label: 'Phosphorus (P)', key: 'phosphorus_fit' },
+                        { label: 'Potassium (K)', key: 'potassium_fit' },
+                        { label: 'Soil pH', key: 'ph_fit' },
+                        { label: 'Temperature', key: 'temperature_fit' },
+                      ].map(({ label, key }) => {
+                        const val = prediction.nutrient_fit[key] ?? 0
+                        const barColor = val >= 80 ? 'bg-emerald-500' : val >= 50 ? 'bg-amber-400' : 'bg-red-400'
+                        const textColor = val >= 80 ? 'text-emerald-700' : val >= 50 ? 'text-amber-600' : 'text-red-600'
+                        return (
+                          <div key={key}>
+                            <div className="flex justify-between text-[11px] mb-0.5">
+                              <span className="text-slate-600">{label}</span>
+                              <span className={`font-semibold ${textColor}`}>{val}%</span>
+                            </div>
+                            <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                              <div className={`h-full rounded-full transition-all duration-500 ${barColor}`} style={{ width: `${Math.min(val, 100)}%` }} />
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 <div className="border-t border-slate-100 pt-3">
                   <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Alternative Matches</p>
