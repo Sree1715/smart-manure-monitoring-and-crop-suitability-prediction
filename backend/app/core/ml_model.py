@@ -80,11 +80,80 @@ CROP_AGRONOMIC_PROFILES = {
     }
 }
 
+def _train_and_save_model_inline():
+    """
+    Inline fallback model trainer — used when crop_suitability_model.joblib is missing.
+    Replicates the logic from scripts/train_model.py without any external import.
+    """
+    import numpy as np
+    import datetime
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.model_selection import train_test_split
+    from sklearn.metrics import accuracy_score
+    from .config import calculate_npk_index
+
+    FEATURE_COLUMNS = [
+        "ph", "nitrogen_pct", "phosphorus_pct", "potassium_pct",
+        "moisture_pct", "temperature_c", "organic_carbon_pct", "npk_index"
+    ]
+
+    CROP_SPECS = {
+        "Pulses":    {"n": (0.30, 0.95), "p": (0.35, 0.70), "k": (0.20, 0.50), "ph": (6.0, 7.5), "t": (18.0, 30.0), "m": (45.0, 65.0), "oc": (10.0, 20.0)},
+        "Mustard":   {"n": (1.00, 1.60), "p": (0.25, 0.50), "k": (0.30, 0.55), "ph": (6.0, 7.5), "t": (10.0, 22.0), "m": (45.0, 65.0), "oc": (10.0, 20.0)},
+        "Wheat":     {"n": (1.40, 2.20), "p": (0.35, 0.65), "k": (0.35, 0.65), "ph": (6.2, 7.5), "t": (15.0, 26.0), "m": (48.0, 68.0), "oc": (11.0, 22.0)},
+        "Maize":     {"n": (1.60, 2.50), "p": (0.40, 0.70), "k": (0.40, 0.70), "ph": (5.8, 7.5), "t": (18.0, 32.0), "m": (50.0, 70.0), "oc": (12.0, 22.0)},
+        "Cotton":    {"n": (1.80, 2.60), "p": (0.40, 0.70), "k": (0.50, 0.85), "ph": (6.5, 8.0), "t": (22.0, 36.0), "m": (48.0, 68.0), "oc": (12.0, 24.0)},
+        "Rice":      {"n": (2.20, 3.40), "p": (0.35, 0.60), "k": (0.40, 0.70), "ph": (5.5, 7.0), "t": (24.0, 36.0), "m": (55.0, 75.0), "oc": (12.0, 25.0)},
+        "Potato":    {"n": (2.20, 3.40), "p": (0.60, 1.05), "k": (1.20, 2.10), "ph": (5.0, 6.4), "t": (14.0, 24.0), "m": (50.0, 72.0), "oc": (14.0, 26.0)},
+        "Sugarcane": {"n": (3.20, 4.80), "p": (0.70, 1.25), "k": (1.00, 1.85), "ph": (6.5, 8.0), "t": (22.0, 38.0), "m": (55.0, 75.0), "oc": (14.0, 26.0)},
+    }
+
+    rows, labels = [], []
+    rng = np.random.default_rng(42)
+    for crop, s in CROP_SPECS.items():
+        for _ in range(450):
+            n  = float(np.clip(rng.uniform(s["n"][0] * 0.92,  s["n"][1]  * 1.08), 0.1,  5.5))
+            p  = float(np.clip(rng.uniform(s["p"][0] * 0.92,  s["p"][1]  * 1.08), 0.05, 2.5))
+            k  = float(np.clip(rng.uniform(s["k"][0] * 0.92,  s["k"][1]  * 1.08), 0.05, 2.5))
+            ph = float(np.clip(rng.uniform(s["ph"][0], s["ph"][1]), 4.5, 8.8))
+            t  = float(np.clip(rng.uniform(s["t"][0],  s["t"][1]),  8.0, 42.0))
+            m  = float(np.clip(rng.uniform(s["m"][0],  s["m"][1]),  15.0, 90.0))
+            oc = float(np.clip(rng.uniform(s["oc"][0], s["oc"][1]), 2.0, 40.0))
+            npk = calculate_npk_index(n, p, k)
+            rows.append([ph, n, p, k, m, t, oc, npk])
+            labels.append(crop)
+
+    X = pd.DataFrame(rows, columns=FEATURE_COLUMNS)
+    y = pd.Series(labels)
+    X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+
+    rf = RandomForestClassifier(n_estimators=150, max_depth=14, n_jobs=2, random_state=42)
+    rf.fit(X_tr, y_tr)
+
+    train_acc = accuracy_score(y_tr, rf.predict(X_tr))
+    test_acc  = accuracy_score(y_te, rf.predict(X_te))
+
+    os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
+    bundle = {
+        "model": rf,
+        "feature_columns": FEATURE_COLUMNS,
+        "classes": rf.classes_.tolist(),
+        "data_provenance": "SYNTHETIC_DATA_FALLBACK",
+        "provenance_detail": "Inline-trained on ICAR/FAO agronomic envelopes (auto-generated fallback).",
+        "method": "RandomForestClassifier (n_estimators=150, max_depth=14) + ICAR Agronomic Engine",
+        "train_accuracy": round(float(train_acc), 4),
+        "test_accuracy":  round(float(test_acc), 4),
+        "trained_at": datetime.datetime.now(datetime.timezone.utc).isoformat() if hasattr(datetime, 'timezone') else str(datetime.datetime.utcnow()),
+    }
+    joblib.dump(bundle, MODEL_PATH)
+    print(f"[+] ml_model: inline fallback model saved → {MODEL_PATH}")
+    return bundle
+
+
 def load_model():
     global _cached_model_bundle, _cached_model_mtime
     if not os.path.exists(MODEL_PATH):
-        from scripts.train_model import train_and_save_model
-        _cached_model_bundle = train_and_save_model()
+        _cached_model_bundle = _train_and_save_model_inline()
         _cached_model_mtime = os.path.getmtime(MODEL_PATH)
     else:
         current_mtime = os.path.getmtime(MODEL_PATH)
