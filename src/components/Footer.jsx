@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Sprout,
   Facebook,
@@ -11,14 +12,6 @@ import {
   MapPin,
 } from "lucide-react";
 
-const QUICK_LINKS = [
-  { label: "Home", to: "/" },
-  { label: "Crop Prediction", to: "/crop-prediction" },
-  { label: "Reports", to: "/reports" },
-  { label: "Farmer Dashboard", to: "/farmer-dashboard" },
-  { label: "Authority Dashboard", to: "/authority-dashboard" },
-];
-
 const SOCIALS = [
   { icon: Facebook, label: "Facebook" },
   { icon: Twitter, label: "Twitter" },
@@ -27,6 +20,16 @@ const SOCIALS = [
 ];
 
 export default function Footer() {
+  const { t } = useTranslation();
+
+  const quickLinks = [
+    { label: t("nav.home"), to: "/" },
+    { label: t("nav.cropPrediction"), to: "/crop-prediction" },
+    { label: t("nav.reports"), to: "/reports" },
+    { label: t("farmerDashboard.title"), to: "/farmer-dashboard" },
+    { label: t("authorityDashboard.title"), to: "/authority-dashboard" },
+  ];
+
   return (
     <footer className="bg-slate-900 text-slate-300 mt-24">
       <div className="container-page py-14 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
@@ -36,12 +39,11 @@ export default function Footer() {
               <Sprout className="w-5 h-5 text-white" />
             </span>
             <span className="font-display font-bold text-white text-[15px]">
-              Smart Manure Monitor
+              {t("footer.brandTitle")}
             </span>
           </div>
           <p className="text-sm text-slate-400 leading-relaxed">
-            An IoT and AI powered platform for monitoring liquid and solid
-            organic manure quality and predicting the most suitable crops.
+            {t("footer.desc")}
           </p>
           <div className="flex items-center gap-2 mt-5">
             {SOCIALS.map(({ icon: Icon, label }) => (
@@ -58,10 +60,10 @@ export default function Footer() {
         </div>
 
         <div>
-          <h4 className="text-white font-semibold text-sm mb-4">Quick Links</h4>
+          <h4 className="text-white font-semibold text-sm mb-4">{t("footer.quickLinks")}</h4>
           <ul className="space-y-2.5">
-            {QUICK_LINKS.map((link) => (
-              <li key={link.label}>
+            {quickLinks.map((link) => (
+              <li key={link.to}>
                 <Link
                   to={link.to}
                   className="text-sm text-slate-400 hover:text-primary-400 transition-colors duration-200"
@@ -74,11 +76,11 @@ export default function Footer() {
         </div>
 
         <div>
-          <h4 className="text-white font-semibold text-sm mb-4">Contact</h4>
+          <h4 className="text-white font-semibold text-sm mb-4">{t("footer.contact")}</h4>
           <ul className="space-y-3 text-sm text-slate-400">
             <li className="flex items-start gap-2.5">
               <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-primary-400" />
-              Karur, Tamil Nadu
+              {t("footer.location")}
             </li>
             <li className="flex items-center gap-2.5">
               <Mail className="w-4 h-4 shrink-0 text-primary-400" />
@@ -93,12 +95,11 @@ export default function Footer() {
 
         <div>
           <h4 className="text-white font-semibold text-sm mb-4">
-            Platform Focus
+            {t("footer.focus")}
           </h4>
           <div className="bg-slate-800/60 rounded-xl p-4 mb-3">
             <p className="text-xs text-slate-400">
-              Smart monitoring and crop recommendations powered by real-time
-              manure data.
+              {t("footer.focusDesc")}
             </p>
           </div>
         </div>
@@ -107,10 +108,9 @@ export default function Footer() {
       <div className="border-t border-slate-800">
         <div className="container-page py-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
           <p>
-            &copy; {new Date().getFullYear()} Smart Manure Monitor. All rights
-            reserved.
+            &copy; {new Date().getFullYear()} {t("footer.rights")}
           </p>
-          <p>Smart agriculture insights</p>
+          <p>{t("nav.tagline")}</p>
         </div>
       </div>
     </footer>

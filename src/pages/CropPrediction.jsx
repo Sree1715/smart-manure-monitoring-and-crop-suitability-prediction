@@ -1,25 +1,43 @@
 import React, { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { BrainCircuit, Droplets, Wheat, Sparkles, RotateCcw, CheckCircle, ShieldCheck, Database } from 'lucide-react'
 import Input from '../components/Input.jsx'
 import Button from '../components/Button.jsx'
 import Card from '../components/Card.jsx'
 import api from '../services/api.js'
 
-// Field definitions with realistic agronomic min/max bounds
-const LIQUID_FIELDS = [
-  { name: 'liquidPh',         label: 'Liquid Manure pH',     placeholder: 'e.g. 6.8',  min: 4.5,  max: 8.8,  step: '0.01', hint: '4.5 – 8.8' },
-  { name: 'liquidNitrogen',   label: 'Nitrogen (%)',          placeholder: 'e.g. 1.4',  min: 0.05, max: 5.5,  step: '0.01', hint: '0.05 – 5.5%' },
-  { name: 'liquidPhosphorus', label: 'Phosphorus (%)',        placeholder: 'e.g. 0.6',  min: 0.05, max: 2.5,  step: '0.01', hint: '0.05 – 2.5%' },
-  { name: 'liquidPotassium',  label: 'Potassium (%)',         placeholder: 'e.g. 1.1',  min: 0.05, max: 2.5,  step: '0.01', hint: '0.05 – 2.5%' },
-]
-
-const SOLID_FIELDS = [
-  { name: 'solidMoisture',    label: 'Moisture (%)',                        placeholder: 'e.g. 58',   min: 15,  max: 90,  step: '0.1', hint: '15 – 90%' },
-  { name: 'solidTemperature', label: 'Temperature (°C)',                   placeholder: 'e.g. 26',   min: 8,   max: 42,  step: '0.1', hint: '8 – 42°C' },
-  { name: 'solidCarbon',      label: 'Organic Carbon (%) [Lab/Manual]',    placeholder: 'e.g. 14.5', min: 2,   max: 40,  step: '0.1', hint: '2 – 40%' },
-]
+const CROP_NAMES_TAMIL = {
+  Sugarcane: "கரும்பு (Sugarcane)",
+  Rice: "நெல் (Rice / Paddy)",
+  Paddy: "நெல் (Paddy)",
+  Cotton: "பருத்தி (Cotton)",
+  Maize: "மக்காச்சோளம் (Maize)",
+  Wheat: "கோதுமை (Wheat)",
+  Banana: "வாழை (Banana)",
+  Groundnut: "நிலக்கடலை (Groundnut)",
+  Tomato: "தக்காளி (Tomato)",
+  Turmeric: "மஞ்சள் (Turmeric)",
+  Millets: "சிறு தானியங்கள் (Millets)",
+  Pulses: "பருப்பு வகைகள் (Pulses)",
+}
 
 export default function CropPrediction() {
+  const { t, i18n } = useTranslation()
+  const isTamil = i18n.language === 'ta'
+
+  const liquidFields = [
+    { name: 'liquidPh',         label: t('cropPrediction.liquidPh'),         placeholder: 'e.g. 6.8',  min: 4.5,  max: 8.8,  step: '0.01', hint: '4.5 – 8.8' },
+    { name: 'liquidNitrogen',   label: t('cropPrediction.liquidNitrogen'),   placeholder: 'e.g. 1.4',  min: 0.05, max: 5.5,  step: '0.01', hint: '0.05 – 5.5%' },
+    { name: 'liquidPhosphorus', label: t('cropPrediction.liquidPhosphorus'), placeholder: 'e.g. 0.6',  min: 0.05, max: 2.5,  step: '0.01', hint: '0.05 – 2.5%' },
+    { name: 'liquidPotassium',  label: t('cropPrediction.liquidPotassium'),  placeholder: 'e.g. 1.1',  min: 0.05, max: 2.5,  step: '0.01', hint: '0.05 – 2.5%' },
+  ]
+
+  const solidFields = [
+    { name: 'solidMoisture',    label: t('cropPrediction.solidMoisture'),    placeholder: 'e.g. 58',   min: 15,  max: 90,  step: '0.1', hint: '15 – 90%' },
+    { name: 'solidTemperature', label: t('cropPrediction.solidTemperature'), placeholder: 'e.g. 26',   min: 8,   max: 42,  step: '0.1', hint: '8 – 42°C' },
+    { name: 'solidCarbon',      label: t('cropPrediction.solidCarbon'),      placeholder: 'e.g. 14.5', min: 2,   max: 40,  step: '0.1', hint: '2 – 40%' },
+  ]
+
   const [form, setForm] = useState({
     liquidPh: '6.8',
     liquidNitrogen: '1.4',
@@ -55,7 +73,7 @@ export default function CropPrediction() {
       setPrediction(res.data)
     } catch (err) {
       console.error('Prediction error:', err)
-      setError(err.response?.data?.detail || 'Failed to generate crop prediction.')
+      setError(err.response?.data?.detail || (isTamil ? 'பயிர் கணிப்பை உருவாக்குவதில் தோல்வி ஏற்பட்டது.' : 'Failed to generate crop prediction.'))
     } finally {
       setLoading(false)
     }
@@ -75,16 +93,23 @@ export default function CropPrediction() {
     setError(null)
   }
 
+  const getDisplayCropName = (crop) => {
+    if (!crop) return ''
+    if (isTamil && CROP_NAMES_TAMIL[crop]) {
+      return CROP_NAMES_TAMIL[crop]
+    }
+    return crop
+  }
+
   return (
     <div className="container-page section-padding">
       <div className="text-center max-w-2xl mx-auto mb-10">
         <span className="badge bg-primary-50 text-primary-700 mb-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold">
-          <BrainCircuit className="w-3.5 h-3.5" /> AI Crop Suitability
+          <BrainCircuit className="w-3.5 h-3.5" /> {t('cropPrediction.badge')}
         </span>
-        <h1 className="text-3xl sm:text-4xl font-bold mb-3 text-slate-900">Crop Prediction</h1>
+        <h1 className="text-3xl sm:text-4xl font-bold mb-3 text-slate-900">{t('cropPrediction.title')}</h1>
         <p className="text-slate-600">
-          Enter live manure sensor readings and lab organic carbon below. Our lightweight Random Forest
-          model evaluates nutrient density and recommends the most suitable crop with provenance data.
+          {t('cropPrediction.desc')}
         </p>
       </div>
 
@@ -96,12 +121,12 @@ export default function CropPrediction() {
                 <Droplets className="w-4.5 h-4.5 text-primary-600" />
               </span>
               <div>
-                <h3 className="font-semibold text-slate-900">Liquid Manure Readings</h3>
-                <p className="text-xs text-slate-400">pH probe (ADC1) & RS485 NPK sensor</p>
+                <h3 className="font-semibold text-slate-900">{t('cropPrediction.liquidSectionTitle')}</h3>
+                <p className="text-xs text-slate-400">{t('cropPrediction.liquidSectionSubtitle')}</p>
               </div>
             </div>
-          <div className="grid sm:grid-cols-2 gap-4">
-              {LIQUID_FIELDS.map((f) => (
+            <div className="grid sm:grid-cols-2 gap-4">
+              {liquidFields.map((f) => (
                 <div key={f.name}>
                   <Input
                     label={f.label}
@@ -115,7 +140,7 @@ export default function CropPrediction() {
                     onChange={handleChange}
                     required
                   />
-                  <p className="text-[10px] text-slate-400 mt-0.5 pl-1">Valid range: {f.hint}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5 pl-1">{isTamil ? 'உகந்த வரம்பு:' : 'Valid range:'} {f.hint}</p>
                 </div>
               ))}
             </div>
@@ -127,12 +152,12 @@ export default function CropPrediction() {
                 <Wheat className="w-4.5 h-4.5 text-secondary-600" />
               </span>
               <div>
-                <h3 className="font-semibold text-slate-900">Solid Manure & Lab Measurements</h3>
-                <p className="text-xs text-slate-400">Capacitive moisture (ADC1), DS18B20 temp, & lab organic carbon %</p>
+                <h3 className="font-semibold text-slate-900">{t('cropPrediction.solidSectionTitle')}</h3>
+                <p className="text-xs text-slate-400">{t('cropPrediction.solidSectionSubtitle')}</p>
               </div>
             </div>
-          <div className="grid sm:grid-cols-2 gap-4">
-              {SOLID_FIELDS.map((f) => (
+            <div className="grid sm:grid-cols-2 gap-4">
+              {solidFields.map((f) => (
                 <div key={f.name}>
                   <Input
                     label={f.label}
@@ -146,7 +171,7 @@ export default function CropPrediction() {
                     onChange={handleChange}
                     required
                   />
-                  <p className="text-[10px] text-slate-400 mt-0.5 pl-1">Valid range: {f.hint}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5 pl-1">{isTamil ? 'உகந்த வரம்பு:' : 'Valid range:'} {f.hint}</p>
                 </div>
               ))}
             </div>
@@ -160,10 +185,10 @@ export default function CropPrediction() {
 
           <div className="flex gap-3">
             <Button type="submit" size="lg" icon={Sparkles} disabled={loading}>
-              {loading ? 'Evaluating Model...' : 'Predict Suitable Crop'}
+              {loading ? (isTamil ? 'கணிக்கப்படுகிறது...' : 'Evaluating Model...') : (isTamil ? 'பயிரை கணிக்கவும்' : 'Predict Suitable Crop')}
             </Button>
             <Button type="button" variant="ghost" size="lg" icon={RotateCcw} onClick={handleReset}>
-              Reset
+              {t('cropPrediction.resetBtn')}
             </Button>
           </div>
         </form>
@@ -175,9 +200,13 @@ export default function CropPrediction() {
                 <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center mx-auto mb-4">
                   <BrainCircuit className="w-8 h-8 text-slate-300" />
                 </div>
-                <p className="text-sm font-medium text-slate-700 mb-1">Ready for Analysis</p>
+                <p className="text-sm font-medium text-slate-700 mb-1">
+                  {isTamil ? 'பகுப்பாய்விற்கு தயார்' : 'Ready for Analysis'}
+                </p>
                 <p className="text-xs text-slate-500">
-                  Fill in the readings and submit to see live Random Forest prediction with data provenance.
+                  {isTamil
+                    ? 'ரேண்டம் ஃபாரஸ்ட் கணிப்பைக் காண சென்சார் அளவீடுகளை உள்ளிட்டு சமர்ப்பிக்கவும்.'
+                    : 'Fill in the readings and submit to see live Random Forest prediction with data provenance.'}
                 </p>
               </div>
             ) : (
@@ -186,14 +215,13 @@ export default function CropPrediction() {
                 {/* Out-of-range banner */}
                 {prediction.out_of_range_params?.length > 0 && (
                   <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-xs text-red-800">
-                    <p className="font-semibold mb-1">⚠️ Input Values Out of Range</p>
-                    <p className="mb-1.5 text-red-700">The following values are outside realistic manure ranges:</p>
+                    <p className="font-semibold mb-1">⚠️ {isTamil ? 'உள்ளீட்டு அளவுகள் வரம்பிற்கு வெளியே உள்ளன' : 'Input Values Out of Range'}</p>
+                    <p className="mb-1.5 text-red-700">
+                      {isTamil ? 'பின்வரும் அளவீடுகள் சாத்தியமான வரம்பை மீறியுள்ளன:' : 'The following values are outside realistic manure ranges:'}
+                    </p>
                     <ul className="list-disc pl-4 space-y-0.5 text-red-700">
                       {prediction.out_of_range_params.map((v, i) => <li key={i}>{v}</li>)}
                     </ul>
-                    <p className="mt-2 text-[10px] text-red-600 font-medium">
-                      Use realistic values: N 0.05–5.5%, P 0.05–2.5%, K 0.05–2.5%, pH 4.5–8.8, Temp 8–42°C, Moisture 15–90%, OC 2–40%
-                    </p>
                   </div>
                 )}
 
@@ -201,11 +229,15 @@ export default function CropPrediction() {
                   <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-md ${prediction.confidence === 0 ? 'bg-red-100' : 'bg-gradient-to-br from-primary-600 to-secondary-600'}`}>
                     <Sparkles className={`w-7 h-7 ${prediction.confidence === 0 ? 'text-red-400' : 'text-white'}`} />
                   </div>
-                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Optimal Recommended Crop</p>
-                  <p className={`text-2xl font-extrabold mb-1 ${prediction.confidence === 0 ? 'text-red-500' : 'text-slate-900'}`}>{prediction.recommended_crop}</p>
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                    {t('cropPrediction.recommendedCrop')}
+                  </p>
+                  <p className={`text-2xl font-extrabold mb-1 ${prediction.confidence === 0 ? 'text-red-500' : 'text-slate-900'}`}>
+                    {getDisplayCropName(prediction.recommended_crop)}
+                  </p>
                   {prediction.confidence > 0 && (
                     <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
-                      Confidence: {prediction.confidence}%
+                      {isTamil ? 'நம்பகத்தன்மை:' : 'Confidence:'} {prediction.confidence}%
                     </span>
                   )}
                 </div>
@@ -213,7 +245,7 @@ export default function CropPrediction() {
                 {prediction.agronomic_rationale && (
                   <div className={`border rounded-xl p-3 text-xs leading-relaxed ${prediction.confidence === 0 ? 'bg-red-50 border-red-100 text-red-900' : 'bg-primary-50/60 border-primary-100 text-primary-900'}`}>
                     <p className={`font-semibold mb-1 ${prediction.confidence === 0 ? 'text-red-700' : 'text-primary-700'}`}>
-                      {prediction.confidence === 0 ? '⚠️ Cannot Predict' : `Why ${prediction.recommended_crop}?`}
+                      {prediction.confidence === 0 ? (isTamil ? '⚠️ கணிக்க இயலவில்லை' : '⚠️ Cannot Predict') : (isTamil ? `ஏன் ${getDisplayCropName(prediction.recommended_crop)}?` : `Why ${prediction.recommended_crop}?`)}
                     </p>
                     <p>{prediction.agronomic_rationale}</p>
                   </div>
@@ -221,14 +253,16 @@ export default function CropPrediction() {
 
                 {prediction.nutrient_fit && (
                   <div className="border-t border-slate-100 pt-3">
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Nutrient Fit — {prediction.recommended_crop}</p>
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                      {isTamil ? 'ஊட்டச்சத்து பொருத்தம்' : 'Nutrient Fit'} — {getDisplayCropName(prediction.recommended_crop)}
+                    </p>
                     <div className="space-y-1.5">
                       {[
-                        { label: 'Nitrogen (N)', key: 'nitrogen_fit' },
-                        { label: 'Phosphorus (P)', key: 'phosphorus_fit' },
-                        { label: 'Potassium (K)', key: 'potassium_fit' },
-                        { label: 'Soil pH', key: 'ph_fit' },
-                        { label: 'Temperature', key: 'temperature_fit' },
+                        { label: isTamil ? 'நைட்ரஜன் (N)' : 'Nitrogen (N)', key: 'nitrogen_fit' },
+                        { label: isTamil ? 'பாஸ்பரஸ் (P)' : 'Phosphorus (P)', key: 'phosphorus_fit' },
+                        { label: isTamil ? 'பொட்டாசியம் (K)' : 'Potassium (K)', key: 'potassium_fit' },
+                        { label: isTamil ? 'மண் pH' : 'Soil pH', key: 'ph_fit' },
+                        { label: isTamil ? 'வெப்பநிலை' : 'Temperature', key: 'temperature_fit' },
                       ].map(({ label, key }) => {
                         const val = prediction.nutrient_fit[key] ?? 0
                         const barColor = val >= 80 ? 'bg-emerald-500' : val >= 50 ? 'bg-amber-400' : 'bg-red-400'
@@ -249,21 +283,25 @@ export default function CropPrediction() {
                   </div>
                 )}
 
-                <div className="border-t border-slate-100 pt-3">
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Alternative Matches</p>
-                  <div className="space-y-1.5">
-                    {prediction.alternatives?.map((alt, idx) => (
-                      <div key={idx} className="flex justify-between items-center text-xs bg-slate-50 p-2 rounded-lg">
-                        <span className="font-medium text-slate-700">{alt.crop}</span>
-                        <span className="text-slate-500">{alt.confidence}%</span>
-                      </div>
-                    ))}
+                {prediction.alternatives?.length > 0 && (
+                  <div className="border-t border-slate-100 pt-3">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                      {isTamil ? 'மாற்று பொருத்தங்கள்' : 'Alternative Matches'}
+                    </p>
+                    <div className="space-y-1.5">
+                      {prediction.alternatives.map((alt, idx) => (
+                        <div key={idx} className="flex justify-between items-center text-xs bg-slate-50 p-2 rounded-lg">
+                          <span className="font-medium text-slate-700">{getDisplayCropName(alt.crop)}</span>
+                          <span className="text-slate-500">{alt.confidence}%</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div className="border-t border-slate-100 pt-3">
                   <div className="flex justify-between text-xs mb-1">
-                    <span className="text-slate-500">Computed NPK Index</span>
+                    <span className="text-slate-500">{isTamil ? 'NPK குறியீடு' : 'Computed NPK Index'}</span>
                     <span className="font-bold text-slate-900">{prediction.npk_index} / 10.0</span>
                   </div>
                 </div>
@@ -271,7 +309,7 @@ export default function CropPrediction() {
                 <div className="bg-emerald-50/70 border border-emerald-200/60 rounded-xl p-3 text-xs space-y-1">
                   <div className="flex items-center gap-1.5 text-emerald-800 font-semibold">
                     <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                    <span>Data Provenance: {prediction.data_provenance}</span>
+                    <span>{isTamil ? 'தரவு மூலம்:' : 'Data Provenance:'} {prediction.data_provenance}</span>
                   </div>
                   <p className="text-slate-600 text-[11px] leading-tight">
                     {prediction.provenance_detail}

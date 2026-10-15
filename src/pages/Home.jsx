@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
   Droplets,
   Wheat,
@@ -15,74 +16,6 @@ import {
 import Button from "../components/Button.jsx";
 import Card from "../components/Card.jsx";
 
-const FEATURES = [
-  {
-    icon: Droplets,
-    title: "Liquid Manure Monitoring",
-    desc: "Real-time tracking of pH, temperature, moisture, and nutrient levels in liquid organic manure via ESP32 sensors.",
-    color: "primary",
-  },
-  {
-    icon: Wheat,
-    title: "Solid Manure Monitoring",
-    desc: "Continuous quality assessment of solid organic manure including decomposition stage and nutrient composition.",
-    color: "secondary",
-  },
-  {
-    icon: BrainCircuit,
-    title: "AI Crop Prediction",
-    desc: "A Random Forest model recommends the most suitable crops based on manure quality and soil parameters.",
-    color: "accent",
-  },
-  {
-    icon: LineChart,
-    title: "Analytics Dashboard",
-    desc: "Visualize trends over time with interactive charts for farmers and government authorities alike.",
-    color: "primary",
-  },
-  {
-    icon: Wifi,
-    title: "IoT Connectivity",
-    desc: "ESP32-based devices stream sensor data over Wi-Fi with Blynk compatibility for remote monitoring.",
-    color: "secondary",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Secure & Reliable",
-    desc: "JWT authentication and encrypted credentials keep farmer and authority data safe at every layer.",
-    color: "accent",
-  },
-];
-
-const STEPS = [
-  {
-    icon: Cpu,
-    title: "Sense",
-    desc: "ESP32 sensors capture live readings from liquid and solid manure sources.",
-  },
-  {
-    icon: Database,
-    title: "Store",
-    desc: "Readings are transmitted via HTTP API and stored securely in MySQL.",
-  },
-  {
-    icon: BrainCircuit,
-    title: "Predict",
-    desc: "A Random Forest model analyses the data to recommend suitable crops.",
-  },
-  {
-    icon: LineChart,
-    title: "Act",
-    desc: "Farmers and authorities view insights on clean, role-based dashboards.",
-  },
-];
-
-const STATS = [
-  { value: "2", label: "Manure Types Monitored" },
-  { value: "24/7", label: "IoT Data Collection" },
-  { value: "AI", label: "Powered Crop Matching" },
-];
-
 const colorMap = {
   primary: { bg: "bg-primary-50", text: "text-primary-600" },
   secondary: { bg: "bg-secondary-50", text: "text-secondary-600" },
@@ -90,6 +23,76 @@ const colorMap = {
 };
 
 export default function Home() {
+  const { t } = useTranslation();
+
+  const features = [
+    {
+      icon: Droplets,
+      title: t("home.f1Title"),
+      desc: t("home.f1Desc"),
+      color: "primary",
+    },
+    {
+      icon: Wheat,
+      title: t("home.f2Title"),
+      desc: t("home.f2Desc"),
+      color: "secondary",
+    },
+    {
+      icon: BrainCircuit,
+      title: t("home.f3Title"),
+      desc: t("home.f3Desc"),
+      color: "accent",
+    },
+    {
+      icon: LineChart,
+      title: t("home.f4Title"),
+      desc: t("home.f4Desc"),
+      color: "primary",
+    },
+    {
+      icon: Wifi,
+      title: t("home.f5Title"),
+      desc: t("home.f5Desc"),
+      color: "secondary",
+    },
+    {
+      icon: ShieldCheck,
+      title: t("home.f6Title"),
+      desc: t("home.f6Desc"),
+      color: "accent",
+    },
+  ];
+
+  const steps = [
+    {
+      icon: Cpu,
+      title: t("home.step1Title"),
+      desc: t("home.step1Desc"),
+    },
+    {
+      icon: Database,
+      title: t("home.step2Title"),
+      desc: t("home.step2Desc"),
+    },
+    {
+      icon: BrainCircuit,
+      title: t("home.step3Title"),
+      desc: t("home.step3Desc"),
+    },
+    {
+      icon: LineChart,
+      title: t("home.step4Title"),
+      desc: t("home.step4Desc"),
+    },
+  ];
+
+  const stats = [
+    { value: t("home.stat1Value"), label: t("home.stat1Label") },
+    { value: t("home.stat2Value"), label: t("home.stat2Label") },
+    { value: t("home.stat3Value"), label: t("home.stat3Label") },
+  ];
+
   return (
     <div>
       {/* Hero */}
@@ -101,17 +104,14 @@ export default function Home() {
         <div className="container-page relative py-8 sm:py-12 lg:py-14 w-full grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           <div className="animate-slide-up">
             <span className="badge bg-primary-50 text-primary-700 border border-primary-100 mb-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold">
-              <Sprout className="w-3.5 h-3.5" /> Organic agriculture insights
+              <Sprout className="w-3.5 h-3.5" /> {t("home.heroBadge")}
             </span>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight tracking-tight mb-4 text-slate-900">
-              Turning Organic Manure into{" "}
-              <span className="text-primary-600">Smarter Crop Decisions</span>
+              {t("home.heroTitlePart1")}{" "}
+              <span className="text-primary-600">{t("home.heroTitlePart2")}</span>
             </h1>
             <p className="text-base sm:text-lg text-slate-600 leading-relaxed mb-6 max-w-xl">
-              An IoT and AI powered platform that monitors liquid and solid
-              organic manure quality in real time, then predicts the most
-              suitable crop for your land &mdash; helping farmers and
-              authorities make data-driven decisions.
+              {t("home.heroDesc")}
             </p>
             <div className="flex flex-wrap gap-3 mb-8">
               <Button
@@ -120,17 +120,17 @@ export default function Home() {
                 icon={ArrowRight}
                 iconPosition="right"
               >
-                Try Crop Prediction
+                {t("home.tryCropPrediction")}
               </Button>
               <Button to="/farmer-dashboard" variant="outline" size="lg">
-                View Dashboard
+                {t("home.viewDashboard")}
               </Button>
             </div>
             <div className="flex items-center gap-8 pt-4 border-t border-slate-200/60">
-              {STATS.map((s) => (
+              {stats.map((s) => (
                 <div key={s.label}>
                   <p className="text-2xl font-bold text-slate-900">{s.value}</p>
-                  <p className="text-xs text-slate-500 max-w-[7.5rem]">
+                  <p className="text-xs text-slate-500 max-w-[8.5rem]">
                     {s.label}
                   </p>
                 </div>
@@ -142,19 +142,19 @@ export default function Home() {
             <div className="bg-white rounded-2xl shadow-card-hover border border-slate-100 p-6 sm:p-7">
               <div className="flex items-center justify-between mb-5">
                 <p className="font-semibold text-slate-900">
-                  Live Sensor Snapshot
+                  {t("home.sensorSnapshot")}
                 </p>
                 <span className="badge bg-secondary-50 text-secondary-700">
                   <span className="w-1.5 h-1.5 rounded-full bg-secondary-500 animate-pulse" />{" "}
-                  Online
+                  {t("home.statusOnline")}
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 {[
-                  { label: "Liquid pH", value: "6.8", unit: "" },
-                  { label: "Moisture", value: "62", unit: "%" },
-                  { label: "Temperature", value: "29", unit: "°C" },
-                  { label: "Nitrogen (N)", value: "1.4", unit: "%" },
+                  { label: t("home.liquidPh"), value: "6.8", unit: "" },
+                  { label: t("home.moisture"), value: "62", unit: "%" },
+                  { label: t("home.temperature"), value: "29", unit: "°C" },
+                  { label: t("home.nitrogen"), value: "1.4", unit: "%" },
                 ].map((m) => (
                   <div
                     key={m.label}
@@ -173,8 +173,8 @@ export default function Home() {
               <div className="mt-5 rounded-xl bg-gradient-to-r from-primary-50 to-secondary-50 p-4 flex items-center gap-3 border border-primary-100">
                 <BrainCircuit className="w-8 h-8 text-primary-600 shrink-0" />
                 <p className="text-sm text-slate-700">
-                  <span className="font-semibold">Predicted crop:</span>{" "}
-                  Sugarcane &mdash; based on current manure composition
+                  <span className="font-semibold">{t("home.predictedCropLabel")}</span>{" "}
+                  {t("home.predictedCropValue")}
                 </p>
               </div>
             </div>
@@ -189,18 +189,17 @@ export default function Home() {
       >
         <div className="text-center max-w-2xl mx-auto mb-12">
           <span className="badge bg-secondary-50 text-secondary-700 border border-secondary-100 mb-4">
-            Platform Capabilities
+            {t("home.capabilitiesBadge")}
           </span>
           <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-            Everything you need in one place
+            {t("home.capabilitiesTitle")}
           </h2>
           <p className="text-slate-600">
-            From sensor to dashboard, the platform covers the full journey of
-            manure monitoring and crop suitability prediction.
+            {t("home.capabilitiesDesc")}
           </p>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {FEATURES.map((f) => (
+          {features.map((f) => (
             <Card
               key={f.title}
               icon={f.icon}
@@ -219,18 +218,17 @@ export default function Home() {
         <div className="container-page section-padding">
           <div className="text-center max-w-2xl mx-auto mb-12">
             <span className="badge bg-accent-50 text-accent-700 border border-accent-100 mb-4">
-              Workflow
+              {t("home.workflowBadge")}
             </span>
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-              How the system works
+              {t("home.workflowTitle")}
             </h2>
             <p className="text-slate-600">
-              A simple four-stage pipeline from raw sensor data to actionable
-              crop insight.
+              {t("home.workflowDesc")}
             </p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {STEPS.map((s, i) => (
+            {steps.map((s, i) => (
               <div
                 key={s.title}
                 className="relative bg-surface rounded-2xl p-6 border border-slate-100"
@@ -258,21 +256,19 @@ export default function Home() {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div>
             <span className="badge bg-primary-50 text-primary-700 border border-primary-100 mb-4">
-              Government Initiative
+              {t("home.govBadge")}
             </span>
             <h2 className="text-3xl font-bold mb-4">
-              Smarter manure management
+              {t("home.govTitle")}
             </h2>
             <p className="text-slate-600 leading-relaxed mb-6">
-              This platform equips farmers and local authorities with the tools
-              to monitor manure quality and use it effectively for crop
-              planning.
+              {t("home.govDesc")}
             </p>
             <ul className="space-y-3">
               {[
-                "Reduces guesswork in choosing the right crop for available manure",
-                "Enables authorities to track manure quality across regions",
-                "Encourages sustainable, organic farming practices",
+                t("home.govPoint1"),
+                t("home.govPoint2"),
+                t("home.govPoint3"),
               ].map((item) => (
                 <li
                   key={item}
@@ -287,11 +283,10 @@ export default function Home() {
           <div className="bg-gradient-to-br from-primary-600 to-secondary-600 rounded-2xl p-10 text-white shadow-card-hover">
             <Sprout className="w-10 h-10 mb-5 opacity-90" />
             <h3 className="text-2xl font-bold mb-3">
-              Ready to see your prediction?
+              {t("home.ctaCardTitle")}
             </h3>
             <p className="text-white/90 mb-7 leading-relaxed">
-              Enter your latest manure readings and get an instant AI-backed
-              crop suitability recommendation.
+              {t("home.ctaCardDesc")}
             </p>
             <Button
               to="/crop-prediction"
@@ -300,7 +295,7 @@ export default function Home() {
               icon={ArrowRight}
               iconPosition="right"
             >
-              Get Started Free
+              {t("home.ctaCardBtn")}
             </Button>
           </div>
         </div>

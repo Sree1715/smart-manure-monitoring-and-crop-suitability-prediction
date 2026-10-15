@@ -1,15 +1,19 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Mail, Phone, MapPin, Send, MessageSquare } from "lucide-react";
 import Input from "../components/Input.jsx";
 import Button from "../components/Button.jsx";
 
-const INFO = [
-  { icon: Mail, label: "Email", value: "contact@smartmanure.gov.in" },
-  { icon: Phone, label: "Phone", value: "+91 8189939056" },
-  { icon: MapPin, label: "Office", value: "Karur, Tamil Nadu" },
-];
-
 export default function Contact() {
+  const { t, i18n } = useTranslation();
+  const isTamil = i18n.language === "ta";
+
+  const info = [
+    { icon: Mail, label: t("contact.emailLabel"), value: "contact@smartmanure.gov.in" },
+    { icon: Phone, label: t("contact.phoneLabel"), value: "+91 8189939056" },
+    { icon: MapPin, label: t("contact.officeLabel"), value: t("contact.officeValue") },
+  ];
+
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -23,28 +27,26 @@ export default function Contact() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // TODO: connect to backend contact endpoint
     setSent(true);
   };
 
   return (
     <div className="container-page section-padding">
       <div className="text-center max-w-2xl mx-auto mb-12">
-        <span className="badge bg-primary-50 text-primary-700 mb-4">
-          <MessageSquare className="w-3.5 h-3.5" /> Get in Touch
+        <span className="badge bg-primary-50 text-primary-700 mb-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold">
+          <MessageSquare className="w-3.5 h-3.5" /> {t("contact.badge")}
         </span>
-        <h1 className="text-3xl sm:text-4xl font-bold mb-3">
-          We&apos;d love to hear from you
+        <h1 className="text-3xl sm:text-4xl font-bold mb-3 text-slate-900">
+          {t("contact.title")}
         </h1>
         <p className="text-slate-600">
-          Questions about the platform, partnership opportunities, or technical
-          support &mdash; reach out and our team will respond promptly.
+          {t("contact.desc")}
         </p>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="space-y-4">
-          {INFO.map((i) => (
+          {info.map((i) => (
             <div
               key={i.label}
               className="bg-white rounded-2xl shadow-card border border-slate-100 p-5 flex items-start gap-4"
@@ -59,10 +61,11 @@ export default function Contact() {
             </div>
           ))}
           <div className="bg-gradient-to-br from-primary-600 to-secondary-600 rounded-2xl p-6 text-white">
-            <p className="font-semibold mb-1.5">Government Support</p>
+            <p className="font-semibold mb-1.5">{isTamil ? "அரசு வேளாண் உதவி" : "Government Support"}</p>
             <p className="text-sm text-white/85">
-              For agricultural support queries, contact your district office
-              directly.
+              {isTamil
+                ? "விவசாய ஆதரவு கேள்விகளுக்கு, உங்கள் மாவட்ட அலுவலகத்தை நேரடியாக தொடர்பு கொள்ளவும்."
+                : "For agricultural support queries, contact your district office directly."}
             </p>
           </div>
         </div>
@@ -74,12 +77,10 @@ export default function Contact() {
                 <Send className="w-7 h-7 text-secondary-600" />
               </div>
               <h3 className="text-xl font-bold text-slate-900 mb-2">
-                Message Sent
+                {isTamil ? "செய்தி அனுப்பப்பட்டது" : "Message Sent"}
               </h3>
               <p className="text-slate-500 text-sm max-w-sm mx-auto">
-                Thanks for reaching out. This is a placeholder confirmation
-                &mdash; the contact form will be wired to the backend in a later
-                step.
+                {t("contact.sentSuccess")}
               </p>
               <Button
                 variant="outline"
@@ -87,22 +88,22 @@ export default function Contact() {
                 className="mt-6"
                 onClick={() => setSent(false)}
               >
-                Send Another Message
+                {isTamil ? "மற்றொரு செய்தியை அனுப்பவும்" : "Send Another Message"}
               </Button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid sm:grid-cols-2 gap-4">
                 <Input
-                  label="Full Name"
+                  label={t("contact.formName")}
                   name="name"
-                  placeholder="Your name"
+                  placeholder={isTamil ? "உங்கள் பெயர்" : "Your name"}
                   value={form.name}
                   onChange={handleChange}
                   required
                 />
                 <Input
-                  label="Email Address"
+                  label={t("contact.formEmail")}
                   name="email"
                   type="email"
                   placeholder="you@example.com"
@@ -112,21 +113,21 @@ export default function Contact() {
                 />
               </div>
               <Input
-                label="Subject"
+                label={t("contact.formSubject")}
                 name="subject"
-                placeholder="How can we help?"
+                placeholder={isTamil ? "நாங்கள் உங்களுக்கு எவ்வாறு உதவ முடியும்?" : "How can we help?"}
                 value={form.subject}
                 onChange={handleChange}
                 required
               />
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Message
+                  {t("contact.formMessage")}
                 </label>
                 <textarea
                   name="message"
                   rows={5}
-                  placeholder="Write your message here..."
+                  placeholder={isTamil ? "உங்கள் செய்தியை இங்கே உள்ளிடவும்..." : "Write your message here..."}
                   value={form.message}
                   onChange={handleChange}
                   required
@@ -134,7 +135,7 @@ export default function Contact() {
                 />
               </div>
               <Button type="submit" size="lg" icon={Send} iconPosition="right">
-                Send Message
+                {t("contact.sendBtn")}
               </Button>
             </form>
           )}

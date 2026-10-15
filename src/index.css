@@ -16,6 +16,10 @@
     outline: 2px solid #2563EB;
     outline-offset: 2px;
   }
+  body.lang-tamil {
+    font-family: 'Noto Sans Tamil', 'Inter', system-ui, sans-serif;
+    line-height: 1.6;
+  }
 }
 
 @layer components {

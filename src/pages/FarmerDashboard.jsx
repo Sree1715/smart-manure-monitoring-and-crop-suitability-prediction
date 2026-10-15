@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Droplets,
   Wheat,
@@ -38,38 +39,7 @@ ChartJS.register(
   Filler,
 );
 
-const STATS = [
-  {
-    icon: Droplets,
-    label: "Liquid Manure pH",
-    value: "6.8",
-    trend: "+0.2 vs last week",
-    accent: "primary",
-  },
-  {
-    icon: Wheat,
-    label: "Solid Manure Moisture",
-    value: "58%",
-    trend: "-3% vs last week",
-    accent: "secondary",
-  },
-  {
-    icon: Thermometer,
-    label: "Avg Temperature",
-    value: "29°C",
-    trend: "Stable",
-    accent: "accent",
-  },
-  {
-    icon: FlaskConical,
-    label: "Nutrient Index (NPK)",
-    value: "7.2",
-    trend: "+0.5 vs last week",
-    accent: "primary",
-  },
-];
-
-const READINGS = [
+const RAW_READINGS = [
   {
     date: "02 Sep 2026",
     type: "Liquid",
@@ -105,7 +75,7 @@ const READINGS = [
 ];
 
 // ---------- helpers ----------
-const num = (v) => (v === "—" ? null : parseFloat(v)); // "29°C" -> 29, "1.4%" -> 1.4
+const num = (v) => (v === "—" ? null : parseFloat(v));
 
 const COLORS = {
   green: "#16a34a",
@@ -144,16 +114,50 @@ function ChartCard({ title, subtitle, children, className = "", badge }) {
 }
 
 export default function FarmerDashboard() {
+  const { t, i18n } = useTranslation();
+  const isTamil = i18n.language === "ta";
+
+  const stats = [
+    {
+      icon: Droplets,
+      label: t("farmerDashboard.statPh"),
+      value: "6.8",
+      trend: `+0.2 ${t("farmerDashboard.trendVsLastWeek")}`,
+      accent: "primary",
+    },
+    {
+      icon: Wheat,
+      label: t("farmerDashboard.statMoisture"),
+      value: "58%",
+      trend: `-3% ${t("farmerDashboard.trendVsLastWeek")}`,
+      accent: "secondary",
+    },
+    {
+      icon: Thermometer,
+      label: t("farmerDashboard.statTemp"),
+      value: "29°C",
+      trend: t("farmerDashboard.trendStable"),
+      accent: "accent",
+    },
+    {
+      icon: FlaskConical,
+      label: t("farmerDashboard.statNpk"),
+      value: "7.2",
+      trend: `+0.5 ${t("farmerDashboard.trendVsLastWeek")}`,
+      accent: "primary",
+    },
+  ];
+
   // Oldest -> newest so charts read left to right in time
-  const chrono = useMemo(() => [...READINGS].reverse(), []);
-  const labels = chrono.map((r) => r.date.slice(0, 6)); // "30 Aug"
+  const chrono = useMemo(() => [...RAW_READINGS].reverse(), []);
+  const labels = chrono.map((r) => r.date.slice(0, 6));
 
   // 1) Line chart: pH (liquid) + temperature over time
   const trendData = {
     labels,
     datasets: [
       {
-        label: "pH (liquid)",
+        label: isTamil ? "pH மதிப்பு (திரவம்)" : "pH (liquid)",
         data: chrono.map((r) => num(r.ph)),
         borderColor: COLORS.green,
         backgroundColor: COLORS.greenSoft,
@@ -163,7 +167,7 @@ export default function FarmerDashboard() {
         yAxisID: "y",
       },
       {
-        label: "Temperature (°C)",
+        label: isTamil ? "வெப்பநிலை (°C)" : "Temperature (°C)",
         data: chrono.map((r) => num(r.temp)),
         borderColor: COLORS.amber,
         backgroundColor: COLORS.amber,
@@ -197,7 +201,7 @@ export default function FarmerDashboard() {
     labels,
     datasets: [
       {
-        label: "Nitrogen (%)",
+        label: isTamil ? "நைட்ரஜன் (%)" : "Nitrogen (%)",
         data: chrono.map((r) => num(r.nitrogen)),
         backgroundColor: chrono.map((r) =>
           r.type === "Liquid" ? COLORS.green : COLORS.blue,
@@ -210,15 +214,18 @@ export default function FarmerDashboard() {
     ...baseOptions,
     plugins: { legend: { display: false } },
     scales: {
-      y: { beginAtZero: true, title: { display: true, text: "Nitrogen %" } },
+      y: { beginAtZero: true, title: { display: true, text: isTamil ? "நைட்ரஜன் %" : "Nitrogen %" } },
     },
   };
 
   // 3) Doughnut: Liquid vs Solid readings
-  const liquidCount = READINGS.filter((r) => r.type === "Liquid").length;
-  const solidCount = READINGS.filter((r) => r.type === "Solid").length;
+  const liquidCount = RAW_READINGS.filter((r) => r.type === "Liquid").length;
+  const solidCount = RAW_READINGS.filter((r) => r.type === "Solid").length;
   const typeData = {
-    labels: ["Liquid", "Solid"],
+    labels: [
+      isTamil ? "திரவ உரம்" : "Liquid",
+      isTamil ? "திட உரம்" : "Solid",
+    ],
     datasets: [
       {
         data: [liquidCount, solidCount],
@@ -229,12 +236,12 @@ export default function FarmerDashboard() {
   };
   const typeOptions = { ...baseOptions, cutout: "65%" };
 
-  // 4) Scatter: temperature vs nitrogen (is warmer manure richer?)
+  // 4) Scatter: temperature vs nitrogen
   const scatterData = {
     datasets: [
       {
-        label: "Liquid",
-        data: READINGS.filter((r) => r.type === "Liquid").map((r) => ({
+        label: isTamil ? "திரவம்" : "Liquid",
+        data: RAW_READINGS.filter((r) => r.type === "Liquid").map((r) => ({
           x: num(r.temp),
           y: num(r.nitrogen),
         })),
@@ -242,8 +249,8 @@ export default function FarmerDashboard() {
         pointRadius: 7,
       },
       {
-        label: "Solid",
-        data: READINGS.filter((r) => r.type === "Solid").map((r) => ({
+        label: isTamil ? "திடம்" : "Solid",
+        data: RAW_READINGS.filter((r) => r.type === "Solid").map((r) => ({
           x: num(r.temp),
           y: num(r.nitrogen),
         })),
@@ -256,12 +263,12 @@ export default function FarmerDashboard() {
     ...baseOptions,
     scales: {
       x: {
-        title: { display: true, text: "Temperature (°C)" },
+        title: { display: true, text: isTamil ? "வெப்பநிலை (°C)" : "Temperature (°C)" },
         suggestedMin: 24,
         suggestedMax: 31,
       },
       y: {
-        title: { display: true, text: "Nitrogen (%)" },
+        title: { display: true, text: isTamil ? "நைட்ரஜன் (%)" : "Nitrogen (%)" },
         suggestedMin: 1,
         suggestedMax: 1.5,
       },
@@ -273,10 +280,10 @@ export default function FarmerDashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <p className="text-sm text-primary-600 font-medium mb-1">
-            Welcome back
+            {isTamil ? "வணக்கம், மீண்டும் வருக" : "Welcome back"}
           </p>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
-            Farmer Dashboard
+            {t("farmerDashboard.title")}
           </h1>
         </div>
         <div className="flex items-center gap-2">
@@ -284,13 +291,13 @@ export default function FarmerDashboard() {
             <Bell className="w-4.5 h-4.5" />
           </button>
           <Button icon={Plus} size="md">
-            Add Reading
+            {t("farmerDashboard.addReading")}
           </Button>
         </div>
       </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-        {STATS.map((s) => (
+        {stats.map((s) => (
           <StatCard key={s.label} {...s} />
         ))}
       </div>
@@ -299,11 +306,11 @@ export default function FarmerDashboard() {
       <div className="grid lg:grid-cols-3 gap-6 mb-6">
         <ChartCard
           className="lg:col-span-2"
-          title="Manure Quality Trend"
-          subtitle="pH and temperature over time"
+          title={isTamil ? "உர தரம் & வரலாற்று மாற்றங்கள்" : "Manure Quality Trend"}
+          subtitle={isTamil ? "காலப்போக்கில் pH மற்றும் வெப்பநிலை" : "pH and temperature over time"}
           badge={
             <span className="badge bg-secondary-50 text-secondary-700">
-              <TrendingUp className="w-3.5 h-3.5" /> Improving
+              <TrendingUp className="w-3.5 h-3.5" /> {isTamil ? "முன்னேறுகிறது" : "Improving"}
             </span>
           }
         >
@@ -312,19 +319,25 @@ export default function FarmerDashboard() {
 
         <div className="bg-white rounded-2xl shadow-card border border-slate-100 p-6">
           <h3 className="font-semibold text-slate-900 mb-1">
-            Latest Prediction
+            {isTamil ? "சமீபத்திய கணிப்பு" : "Latest Prediction"}
           </h3>
           <p className="text-sm text-slate-500 mb-5">
-            Based on your most recent readings
+            {isTamil ? "உங்கள் அண்மை அளவீடுகளின்படி" : "Based on your most recent readings"}
           </p>
           <div className="rounded-xl bg-gradient-to-br from-primary-600 to-secondary-600 text-white p-5 mb-4">
             <Sprout className="w-7 h-7 mb-3 opacity-90" />
-            <p className="text-xs text-white/80 mb-1">Recommended Crop</p>
-            <p className="text-2xl font-bold">Sugarcane</p>
-            <p className="text-xs text-white/80 mt-2">Confidence: 87%</p>
+            <p className="text-xs text-white/80 mb-1">
+              {t("cropPrediction.recommendedCrop")}
+            </p>
+            <p className="text-2xl font-bold">
+              {isTamil ? "கரும்பு (Sugarcane)" : "Sugarcane"}
+            </p>
+            <p className="text-xs text-white/80 mt-2">
+              {isTamil ? "நம்பகத்தன்மை: 87%" : "Confidence: 87%"}
+            </p>
           </div>
           <Button to="/crop-prediction" variant="outline" fullWidth size="sm">
-            Run New Prediction
+            {isTamil ? "புதிய கணிப்பை இயக்கவும்" : "Run New Prediction"}
           </Button>
         </div>
       </div>
@@ -332,19 +345,22 @@ export default function FarmerDashboard() {
       {/* Row 2: bar + doughnut + scatter */}
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <ChartCard
-          title="Nitrogen Content"
-          subtitle="Per reading (green = liquid, blue = solid)"
+          title={isTamil ? "நைட்ரஜன் அளவு" : "Nitrogen Content"}
+          subtitle={isTamil ? "அளவீடு வாரியாக (பச்சை = திரவம், நீலம் = திடம்)" : "Per reading (green = liquid, blue = solid)"}
         >
           <Bar data={nitrogenData} options={nitrogenOptions} />
         </ChartCard>
 
-        <ChartCard title="Readings by Type" subtitle="Liquid vs solid manure">
+        <ChartCard
+          title={isTamil ? "உர வகை வாரியாக அளவீடுகள்" : "Readings by Type"}
+          subtitle={isTamil ? "திரவ vs திட உரம்" : "Liquid vs solid manure"}
+        >
           <Doughnut data={typeData} options={typeOptions} />
         </ChartCard>
 
         <ChartCard
-          title="Temperature vs Nitrogen"
-          subtitle="Relationship between readings"
+          title={isTamil ? "வெப்பநிலை vs நைட்ரஜன்" : "Temperature vs Nitrogen"}
+          subtitle={isTamil ? "அளவீடுகளுக்கு இடையேயான தொடர்பு" : "Relationship between readings"}
         >
           <Scatter data={scatterData} options={scatterOptions} />
         </ChartCard>
@@ -353,26 +369,26 @@ export default function FarmerDashboard() {
       <div className="bg-white rounded-2xl shadow-card border border-slate-100 overflow-hidden">
         <div className="flex items-center justify-between p-6 pb-4">
           <h3 className="font-semibold text-slate-900">
-            Recent Sensor Readings
+            {t("farmerDashboard.readingsTitle")}
           </h3>
           <Button variant="ghost" size="sm" icon={Download}>
-            Export
+            {isTamil ? "ஏற்றுமதி" : "Export"}
           </Button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-slate-400 border-y border-slate-100">
-                <th className="py-3 px-6 font-medium">Date</th>
-                <th className="py-3 px-6 font-medium">Type</th>
-                <th className="py-3 px-6 font-medium">pH</th>
-                <th className="py-3 px-6 font-medium">Moisture</th>
-                <th className="py-3 px-6 font-medium">Temp</th>
-                <th className="py-3 px-6 font-medium">Nitrogen</th>
+                <th className="py-3 px-6 font-medium">{t("farmerDashboard.colDate")}</th>
+                <th className="py-3 px-6 font-medium">{t("farmerDashboard.colType")}</th>
+                <th className="py-3 px-6 font-medium">{t("farmerDashboard.colPh")}</th>
+                <th className="py-3 px-6 font-medium">{t("farmerDashboard.colMoisture")}</th>
+                <th className="py-3 px-6 font-medium">{t("farmerDashboard.colTemp")}</th>
+                <th className="py-3 px-6 font-medium">{t("farmerDashboard.colNitrogen")}</th>
               </tr>
             </thead>
             <tbody>
-              {READINGS.map((r, i) => (
+              {RAW_READINGS.map((r, i) => (
                 <tr
                   key={i}
                   className="border-b border-slate-50 last:border-0 hover:bg-slate-50/60"
@@ -382,7 +398,7 @@ export default function FarmerDashboard() {
                     <span
                       className={`badge ${r.type === "Liquid" ? "bg-primary-50 text-primary-700" : "bg-secondary-50 text-secondary-700"}`}
                     >
-                      {r.type}
+                      {r.type === "Liquid" ? t("farmerDashboard.typeLiquid") : t("farmerDashboard.typeSolid")}
                     </span>
                   </td>
                   <td className="py-3.5 px-6 text-slate-600">{r.ph}</td>

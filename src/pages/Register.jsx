@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   User,
   Mail,
@@ -15,6 +16,9 @@ import Button from "../components/Button.jsx";
 import { authService } from "../services/authService.js";
 
 export default function Register() {
+  const { t, i18n } = useTranslation();
+  const isTamil = i18n.language === "ta";
+
   const [role, setRole] = useState("farmer");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -43,7 +47,7 @@ export default function Register() {
     setError("");
 
     if (form.password !== form.confirmPassword) {
-      setError("Passwords do not match.");
+      setError(isTamil ? "கடவுச்சொற்கள் பொருந்தவில்லை." : "Passwords do not match.");
       return;
     }
 
@@ -60,7 +64,7 @@ export default function Register() {
       });
 
       if (response.data?.success) {
-        setMessage("Account created successfully!");
+        setMessage(isTamil ? "கணக்கு வெற்றிகரமாக உருவாக்கப்பட்டது! இப்போது உள்நுழையலாம்." : "Account created successfully! You can now log in.");
 
         setForm({
           name: "",
@@ -71,7 +75,7 @@ export default function Register() {
           confirmPassword: "",
         });
       } else {
-        setError(response.data?.message || "Registration failed.");
+        setError(response.data?.message || (isTamil ? "பதிவு செய்தல் தோல்வியடைந்தது." : "Registration failed."));
       }
     } catch (err) {
       console.error("Registration error:", err);
@@ -82,7 +86,9 @@ export default function Register() {
         setError(`Registration failed: ${err.message}`);
       } else {
         setError(
-          "Registration failed. Please check if the backend is running.",
+          isTamil
+            ? "பதிவு செய்தல் தோல்வியடைந்தது. பின்தளம் இயங்குகிறதா என சரிபார்க்கவும்."
+            : "Registration failed. Please check if the backend is running.",
         );
       }
     } finally {
@@ -93,16 +99,16 @@ export default function Register() {
   return (
     <div className="container-page section-padding max-w-2xl">
       <div className="text-center mb-8">
-        <span className="badge bg-secondary-50 text-secondary-700 mb-4">
-          Create Account
+        <span className="badge bg-secondary-50 text-secondary-700 mb-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold">
+          {isTamil ? "கணக்கை உருவாக்கவும்" : "Create Account"}
         </span>
 
         <h1 className="text-3xl font-bold text-slate-900 mb-2">
-          Join Smart Manure Monitor
+          {t("auth.registerTitle")}
         </h1>
 
         <p className="text-slate-500">
-          Register as a farmer or a government authority to get started.
+          {t("auth.registerSubtitle")}
         </p>
       </div>
 
@@ -118,7 +124,7 @@ export default function Register() {
             }`}
           >
             <Tractor className="w-4 h-4" />
-            Farmer
+            {isTamil ? "விவசாயி" : "Farmer"}
           </button>
 
           <button
@@ -131,24 +137,24 @@ export default function Register() {
             }`}
           >
             <Building2 className="w-4 h-4" />
-            Authority
+            {isTamil ? "அதிகாரி" : "Authority"}
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid sm:grid-cols-2 gap-4">
             <Input
-              label="Full Name"
+              label={t("settings.fullName")}
               name="name"
               icon={User}
-              placeholder="Enter your full name"
+              placeholder={isTamil ? "உங்கள் முழு பெயர்" : "Enter your full name"}
               value={form.name}
               onChange={handleChange}
               required
             />
 
             <Input
-              label="Phone Number"
+              label={t("settings.phone")}
               name="phone"
               icon={Phone}
               placeholder="+91 XXXXX XXXXX"
@@ -159,7 +165,7 @@ export default function Register() {
           </div>
 
           <Input
-            label="Email Address"
+            label={t("settings.email")}
             type="email"
             name="email"
             icon={Mail}
@@ -172,12 +178,12 @@ export default function Register() {
           <Input
             label={
               role === "farmer"
-                ? "Farm Location"
-                : "Jurisdiction / Office Location"
+                ? (isTamil ? "பண்ணை இருப்பிடம்" : "Farm Location")
+                : (isTamil ? "அதிகார வரம்பு / அலுவலக இருப்பிடம்" : "Jurisdiction / Office Location")
             }
             name="location"
             icon={MapPin}
-            placeholder="District, State"
+            placeholder={isTamil ? "மாவட்டம், மாநிலம்" : "District, State"}
             value={form.location}
             onChange={handleChange}
             required
@@ -185,45 +191,36 @@ export default function Register() {
 
           <div className="grid sm:grid-cols-2 gap-4">
             <Input
-              label="Password"
+              label={isTamil ? "கடவுச்சொல்" : "Password"}
               type="password"
               name="password"
               icon={Lock}
-              placeholder="Create a password"
+              placeholder="••••••••"
               value={form.password}
               onChange={handleChange}
               required
             />
 
             <Input
-              label="Confirm Password"
+              label={isTamil ? "கடவுச்சொல்லை உறுதிப்படுத்தவும்" : "Confirm Password"}
               type="password"
               name="confirmPassword"
               icon={Lock}
-              placeholder="Re-enter password"
+              placeholder="••••••••"
               value={form.confirmPassword}
               onChange={handleChange}
               required
             />
           </div>
 
-          <label className="flex items-start gap-2.5 text-sm text-slate-600 pt-1">
-            <input
-              type="checkbox"
-              required
-              className="mt-0.5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
-            />
-            I agree to the Terms of Service and Privacy Policy.
-          </label>
-
           {error && (
-            <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+            <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-2.5 text-xs sm:text-sm text-red-700">
               {error}
             </div>
           )}
 
           {message && (
-            <div className="rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">
+            <div className="rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-2.5 text-xs sm:text-sm text-emerald-700">
               {message}
             </div>
           )}
@@ -235,21 +232,22 @@ export default function Register() {
             icon={ArrowRight}
             iconPosition="right"
             disabled={loading}
+            className="mt-2"
           >
-            {loading ? "Creating Account..." : "Create Account"}
+            {loading ? (isTamil ? "பதிவு செய்யப்படுகிறது..." : "Creating Account...") : t("auth.registerBtn")}
           </Button>
         </form>
-      </div>
 
-      <p className="text-center text-sm text-slate-500 mt-6">
-        Already have an account?{" "}
-        <Link
-          to="/farmer-login"
-          className="text-primary-600 font-medium hover:underline"
-        >
-          Log in
-        </Link>
-      </p>
+        <p className="text-center text-xs sm:text-sm text-slate-500 mt-6">
+          {t("auth.hasAccount")}{" "}
+          <Link
+            to={role === "farmer" ? "/farmer-login" : "/authority-login"}
+            className="text-primary-600 font-medium hover:underline"
+          >
+            {t("nav.login")}
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }

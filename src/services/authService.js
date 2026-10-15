@@ -1,19 +1,36 @@
-import api from './api.js'
+import api, { getErrorMessage } from './api.js'
 
 export const authService = {
   async loginFarmer(credentials) {
-    return api.post('/auth/farmer/login', credentials)
+    try {
+      return await api.post('/auth/farmer/login', credentials)
+    } catch (err) {
+      // Attach friendly message and re-throw so callers get consistent errors
+      err.friendlyMessage = getErrorMessage(err)
+      throw err
+    }
   },
 
   async loginAuthority(credentials) {
-    return api.post('/auth/authority/login', credentials)
+    try {
+      return await api.post('/auth/authority/login', credentials)
+    } catch (err) {
+      err.friendlyMessage = getErrorMessage(err)
+      throw err
+    }
   },
 
   async register(payload) {
-    return api.post('/auth/register', payload)
+    try {
+      return await api.post('/auth/register', payload)
+    } catch (err) {
+      err.friendlyMessage = getErrorMessage(err)
+      throw err
+    }
   },
 
   async logout() {
     localStorage.removeItem('access_token')
+    localStorage.removeItem('user')
   },
 }
