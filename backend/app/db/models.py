@@ -9,8 +9,18 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     password_hash = Column(String)
     role = Column(String)  # "farmer" | "authority"
-    district = Column(String, nullable=True)
+    name = Column(String, nullable=True)
+    phone = Column(String, nullable=True)
+    district = Column(String, nullable=True, index=True)
+    village = Column(String, nullable=True, index=True)
+    farm_id = Column(String, unique=True, index=True, nullable=True)
+    farm_name = Column(String, nullable=True)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    farm_size_acres = Column(Float, nullable=True)
+    
     devices = relationship("Device", back_populates="owner")
+    alerts = relationship("Alert", back_populates="user")
 
 class Device(Base):
     __tablename__ = "devices"
@@ -44,3 +54,19 @@ class Reading(Base):
     npk_index = Column(Float, nullable=True)
     
     device = relationship("Device", back_populates="readings")
+
+class Alert(Base):
+    __tablename__ = "alerts"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    device_id = Column(Integer, ForeignKey("devices.id"), nullable=True)
+    district = Column(String, index=True)
+    village = Column(String, nullable=True)
+    parameter = Column(String) # "pH", "moisture", "temperature", "nitrogen", "phosphorus", "potassium"
+    value = Column(Float)
+    threshold_type = Column(String) # "warning" | "critical"
+    message = Column(String)
+    timestamp = Column(DateTime, default=datetime.datetime.utcnow)
+    is_resolved = Column(Boolean, default=False)
+    
+    user = relationship("User", back_populates="alerts")

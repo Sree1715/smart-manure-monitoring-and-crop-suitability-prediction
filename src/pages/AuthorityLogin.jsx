@@ -162,7 +162,7 @@ export default function AuthorityLogin() {
               {isTamil ? "அதிகாரி அணுகலுக்கு சரிபார்ப்பு தேவைப்படுகிறது." : "Authority access requires verification. Contact admin for credential issues."}
             </p>
             <p className="text-xs text-slate-500 mt-2 bg-white py-1.5 px-3 rounded-lg border border-slate-200/80 shadow-xs">
-              💡 Demo: <strong className="text-slate-800">admin@gobardhan.gov.in</strong> / <strong className="text-slate-800">admin123</strong>
+              💡 Demo: <strong className="text-slate-800">admin@smartmanure.gov.in</strong> / <strong className="text-slate-800">admin123</strong>
             </p>
           </div>
         </div>

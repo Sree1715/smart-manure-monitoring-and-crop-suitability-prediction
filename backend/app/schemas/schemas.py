@@ -14,6 +14,16 @@ class UserCreate(BaseModel):
     name: Optional[str] = None
     phone: Optional[str] = None
     role: Optional[str] = "farmer"
+    otp: Optional[str] = None
+
+class SendOtpRequest(BaseModel):
+    email: EmailStr
+    purpose: Optional[str] = "registration"
+
+class VerifyOtpRequest(BaseModel):
+    email: EmailStr
+    otp: str
+
 
 class User(UserBase):
     id: int

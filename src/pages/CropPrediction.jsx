@@ -101,8 +101,34 @@ export default function CropPrediction() {
     return crop
   }
 
+  // Check if logged-in user is an authority
+  const user = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('user'));
+    } catch {
+      return null;
+    }
+  })();
+  const isAuthority = user?.role === 'authority';
+
   return (
     <div className="container-page section-padding">
+      {isAuthority && (
+        <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs sm:text-sm flex items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0" />
+            <span>
+              {isTamil
+                ? 'அதிகாரி போர்ட்டல் முறைமை: விவசாயிகளின் நேரலை பயிர் கணிப்பு மற்றும் உரத் தரத்தை அதிகாரி கட்டுப்பாட்டு பலகையில் கண்காணிக்கலாம்.'
+                : 'Authority Notice: This prediction tool is tailored for farmers. Farm-level crop predictions across all 38 districts can be monitored directly in the Authority Dashboard.'}
+            </span>
+          </div>
+          <Button to="/authority-dashboard" size="sm" variant="accent">
+            {isTamil ? 'அதிகாரி பலகை' : 'Authority Dashboard'}
+          </Button>
+        </div>
+      )}
+
       <div className="text-center max-w-2xl mx-auto mb-10">
         <span className="badge bg-primary-50 text-primary-700 mb-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold">
           <BrainCircuit className="w-3.5 h-3.5" /> {t('cropPrediction.badge')}

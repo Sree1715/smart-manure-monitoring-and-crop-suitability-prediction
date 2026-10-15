@@ -1,251 +1,501 @@
-import React, { useState, useEffect } from 'react'
-import { useTranslation } from 'react-i18next'
+import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
-  Users, Wheat, AlertTriangle, MapPin, Download, Filter, Search, RotateCcw
-} from 'lucide-react'
-import { StatCard } from '../components/Card.jsx'
-import Button from '../components/Button.jsx'
-import Input from '../components/Input.jsx'
-import api from '../services/api.js'
-
-const statusColor = {
-  Good: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
-  Attention: 'bg-amber-50 text-amber-700 border border-amber-200',
-  Critical: 'bg-red-50 text-red-600 border border-red-200',
-}
-
-const CROP_NAMES_TAMIL = {
-  Sugarcane: "கரும்பு (Sugarcane)",
-  Rice: "நெல் (Rice / Paddy)",
-  Paddy: "நெல் (Paddy)",
-  Cotton: "பருத்தி (Cotton)",
-  Maize: "மக்காச்சோளம் (Maize)",
-  Wheat: "கோதுமை (Wheat)",
-  Banana: "வாழை (Banana)",
-  Groundnut: "நிலக்கடலை (Groundnut)",
-  Tomato: "தக்காளி (Tomato)",
-  Turmeric: "மஞ்சள் (Turmeric)",
-}
+  Users,
+  Wheat,
+  AlertTriangle,
+  MapPin,
+  Download,
+  Filter,
+  Search,
+  RotateCcw,
+  RefreshCw,
+  MapPinOff,
+  Calendar,
+  CheckCircle2,
+  AlertCircle,
+  HelpCircle,
+  ChevronDown,
+  Layers,
+  Sparkles,
+  Building2,
+  ShieldCheck,
+} from 'lucide-react';
+import api from '../services/api.js';
+import TamilNaduMap from '../components/TamilNaduMap.jsx';
+import FarmDetailsPanel from '../components/FarmDetailsPanel.jsx';
+import RegionalInsights from '../components/RegionalInsights.jsx';
+import UnlocatedFarmsModal from '../components/UnlocatedFarmsModal.jsx';
+import AuthorityCharts from '../components/AuthorityCharts.jsx';
+import Button from '../components/Button.jsx';
+import Input from '../components/Input.jsx';
 
 export default function AuthorityDashboard() {
-  const { t, i18n } = useTranslation()
-  const isTamil = i18n.language === 'ta'
+  const { t, i18n } = useTranslation();
+  const isTamil = i18n.language === 'ta';
 
-  const [districtInput, setDistrictInput] = useState('')
-  const [activeDistrict, setActiveDistrict] = useState('')
-  const [overview, setOverview] = useState(null)
-  const [farmers, setFarmers] = useState([])
-  const [loading, setLoading] = useState(true)
+  // Filters state
+  const [selectedDistrict, setSelectedDistrict] = useState('ALL');
+  const [villageSearch, setVillageSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [dateRange, setDateRange] = useState('30'); // days
 
-  const fetchData = async (dist = '') => {
-    setLoading(true)
+  // Data state
+  const [districtsMeta, setDistrictsMeta] = useState([]);
+  const [farmsData, setFarmsData] = useState({ farms: [], unlocated_farms: [], total_farms: 0 });
+  const [mapStats, setMapStats] = useState(null);
+  const [regionalInsights, setRegionalInsights] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [authError, setAuthError] = useState(null);
+
+  // Selected farm for detailed side panel
+  const [selectedFarmId, setSelectedFarmId] = useState(null);
+  const [unlocatedModalOpen, setUnlocatedModalOpen] = useState(false);
+
+  // Fetch all dashboard data
+  const fetchDashboardData = useCallback(async () => {
+    setRefreshing(true);
+    setAuthError(null);
+
     try {
-      const params = dist ? { district: dist } : {}
-      const [overviewRes, farmersRes] = await Promise.all([
-        api.get('/authority/overview', { params }),
-        api.get('/authority/farmers', { params }),
-      ])
-      setOverview(overviewRes.data)
-      setFarmers(farmersRes.data)
+      const params = {
+        district: selectedDistrict !== 'ALL' ? selectedDistrict : undefined,
+        village: villageSearch.trim() || undefined,
+        status: statusFilter !== 'ALL' ? statusFilter : undefined,
+      };
+
+      const statsParams = {
+        district: selectedDistrict !== 'ALL' ? selectedDistrict : undefined,
+        village: villageSearch.trim() || undefined,
+      };
+
+      const [districtsRes, farmsRes, statsRes, insightsRes] = await Promise.all([
+        api.get('/authority/districts'),
+        api.get('/authority/farms', { params }),
+        api.get('/authority/map-stats', { params: statsParams }),
+        api.get('/authority/regional-insights', { params: { days: parseInt(dateRange, 10) || 30 } }),
+      ]);
+
+      setDistrictsMeta(districtsRes.data?.districts || []);
+      setFarmsData(farmsRes.data || { farms: [], unlocated_farms: [] });
+      setMapStats(statsRes.data);
+      setRegionalInsights(insightsRes.data?.hotspots || []);
     } catch (err) {
-      console.error('Failed to load authority dashboard data:', err)
+      console.error('Failed to load authority dashboard data:', err);
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        setAuthError(
+          isTamil
+            ? 'இந்த தொகுதியை அணுக அரசு அதிகாரி அனுமதி தேவைப்படுகிறது. தயவுசெய்து அதிகாரி கணக்கில் உள்நுழைக.'
+            : 'Authority privileges required to view the geographic monitoring module. Please log in as an authorized officer.'
+        );
+      }
     } finally {
-      setLoading(false)
+      setLoading(false);
+      setRefreshing(false);
     }
-  }
+  }, [selectedDistrict, villageSearch, statusFilter, dateRange, isTamil]);
 
   useEffect(() => {
-    fetchData(activeDistrict)
-  }, [activeDistrict])
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
-  const handleSearch = (e) => {
-    e.preventDefault()
-    setActiveDistrict(districtInput.trim())
-  }
+  // Handle District Change
+  const handleDistrictChange = (dist) => {
+    setSelectedDistrict(dist);
+    setVillageSearch('');
+  };
 
-  const handleClearFilter = () => {
-    setDistrictInput('')
-    setActiveDistrict('')
-  }
+  // Reset all filters
+  const handleResetFilters = () => {
+    setSelectedDistrict('ALL');
+    setVillageSearch('');
+    setStatusFilter('ALL');
+    setDateRange('30');
+  };
 
-  const stats = [
+  const statCards = [
     {
+      title: isTamil ? 'மொத்த பண்ணைகள்' : 'Total Farms',
+      value: mapStats?.total_farms || farmsData.total_farms || 0,
+      sub: selectedDistrict !== 'ALL' ? selectedDistrict : (isTamil ? '38 மாவட்டங்கள்' : 'All 38 Districts'),
       icon: Users,
-      label: t('authorityDashboard.registeredFarmers'),
-      value: overview ? String(overview.registered_farmers_count) : '...',
-      trend: activeDistrict ? (isTamil ? `${activeDistrict} மாவட்டத்தில்` : `In ${activeDistrict}`) : (isTamil ? 'மொத்த எண்ணிக்கை' : 'National total'),
-      accent: 'primary',
+      color: 'bg-primary-50 text-primary-700 border-primary-200',
     },
     {
-      icon: Wheat,
-      label: isTamil ? 'செயலில் உள்ள சாதனங்கள்' : 'Devices Active',
-      value: overview ? String(overview.active_devices_count) : '...',
-      trend: isTamil ? 'வன்பொருள் இணைக்கப்பட்டுள்ளது' : 'Hardware connected',
-      accent: 'secondary',
+      title: isTamil ? 'இயல்பான உரம்' : 'Normal Quality',
+      value: mapStats?.normal_count ?? 0,
+      sub: isTamil ? 'பாதுகாப்பான வரம்பில்' : 'Within optimal thresholds',
+      icon: CheckCircle2,
+      color: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     },
     {
+      title: isTamil ? 'கவனம் தேவை (எச்சரிக்கை)' : 'Warning Farms',
+      value: mapStats?.warning_count ?? 0,
+      sub: isTamil ? 'அளவுரு மாறுபாடு' : 'Parameter attention needed',
       icon: AlertTriangle,
-      label: t('authorityDashboard.anomalies'),
-      value: overview ? String(overview.quality_alerts_count) : '...',
-      trend: overview?.quality_alerts_count > 0 ? (isTamil ? 'கவனம் தேவை' : 'Requires attention') : (isTamil ? 'வழக்கமான வரம்பு' : 'Normal range'),
-      accent: 'accent',
+      color: 'bg-amber-50 text-amber-700 border-amber-200',
     },
     {
-      icon: MapPin,
-      label: isTamil ? 'கண்காணிக்கப்படும் பகுதிகள்' : 'Regions Covered',
-      value: overview ? String(overview.districts_count) : '...',
-      trend: isTamil ? 'உட்பட்ட மாவட்டங்கள்' : 'Districts represented',
-      accent: 'primary',
+      title: isTamil ? 'அவசர நிலை எச்சரிக்கைகள்' : 'Critical Alerts',
+      value: mapStats?.critical_count ?? 0,
+      sub: isTamil ? 'உடனடி தலையீடு தேவை' : 'Immediate intervention',
+      icon: AlertCircle,
+      color: 'bg-red-50 text-red-700 border-red-200',
     },
-  ]
-
-  const getStatusLabel = (status) => {
-    if (!status) return ''
-    if (isTamil) {
-      if (status === 'Good') return 'நன்றாக உள்ளது'
-      if (status === 'Attention') return 'கவனம் தேவை'
-      if (status === 'Critical') return 'அவசர நிலை'
-    }
-    return status
-  }
+    {
+      title: isTamil ? 'காலாவதியான / தகவல் இல்லை' : 'Outdated / No Data',
+      value: mapStats?.insufficient_count ?? 0,
+      sub: isTamil ? '>14 நாட்கள் அளவீடு இல்லை' : 'No telemetry >14 days',
+      icon: HelpCircle,
+      color: 'bg-slate-100 text-slate-700 border-slate-300',
+    },
+  ];
 
   return (
-    <div className="container-page section-padding">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-        <div>
-          <p className="text-sm text-accent-600 font-medium mb-1">
-            {isTamil ? 'வேளாண் துறை அதிகாரி போர்ட்டல்' : 'Global Read-Only Authority Portal'}
-          </p>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
-            {t('authorityDashboard.title')}
-          </h1>
-          {activeDistrict && (
-            <p className="text-xs text-primary-600 font-semibold mt-1">
-              {isTamil ? `செயலில் உள்ள மாவட்ட வடிகட்டி: "${activeDistrict}"` : `Active District Filter: "${activeDistrict}"`}
+    <div className="container-page section-padding space-y-8">
+      {/* ─────────────────────────────────────────────────────────────────────────
+          TOP SECTION: Header & Filters Bar
+      ────────────────────────────────────────────────────────────────────────── */}
+      <div className="bg-white rounded-2xl shadow-card border border-slate-100 p-6">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-slate-100">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="badge bg-primary-50 text-primary-700 border border-primary-200 font-bold px-2.5 py-0.5 rounded-full text-xs">
+                {isTamil ? 'தமிழ்நாடு வேளாண்மை இயக்குநரகம்' : 'Tamil Nadu Agricultural Directorate'}
+              </span>
+              <span className="text-xs text-slate-400 font-medium">
+                &bull; GOBARdhan / Smart Manure GIS
+              </span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              {isTamil ? 'தமிழ்நாடு இயற்கை உர தரக் கண்காணிப்பு வரைபடம்' : 'Tamil Nadu Manure Quality Monitoring'}
+            </h1>
+            <p className="text-sm text-slate-500 mt-1">
+              {isTamil
+                ? 'அனைத்து 38 மாவட்டங்களிலும் உள்ள பதிவு செய்யப்பட்ட பண்ணைகளின் இயற்கை உர தரம் மற்றும் பயிர் கணிப்புகளை நிகழ்நேரத்தில் கண்காணிக்கவும்.'
+                : 'Interactive spatial telemetry across all 38 districts of Tamil Nadu for organic manure quality and AI crop suitability.'}
             </p>
-          )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            {farmsData.unlocated_count > 0 && (
+              <button
+                onClick={() => setUnlocatedModalOpen(true)}
+                className="px-3 py-2 rounded-xl border border-amber-200 bg-amber-50 text-amber-800 text-xs font-semibold hover:bg-amber-100 transition flex items-center gap-1.5 shadow-xs"
+              >
+                <MapPinOff className="w-4 h-4 text-amber-600" />
+                <span>
+                  {farmsData.unlocated_count} {isTamil ? 'இருப்பிடம் இல்லை' : 'Location Not Available'}
+                </span>
+              </button>
+            )}
+
+            <button
+              onClick={fetchDashboardData}
+              disabled={refreshing}
+              className="px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:border-primary-300 hover:text-primary-600 text-xs font-semibold shadow-xs flex items-center gap-1.5 transition disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-primary-600' : ''}`} />
+              <span>{isTamil ? 'புதுப்பிக்கவும்' : 'Refresh'}</span>
+            </button>
+          </div>
         </div>
-        <form onSubmit={handleSearch} className="flex items-center gap-2">
-          <Input
-            placeholder={t('authorityDashboard.searchDistrictPlaceholder')}
-            value={districtInput}
-            onChange={(e) => setDistrictInput(e.target.value)}
-            icon={Search}
-            containerClassName="w-64"
-          />
-          <Button type="submit" size="sm" icon={Filter}>{t('authorityDashboard.filterBtn')}</Button>
-          {activeDistrict && (
-            <Button type="button" variant="ghost" size="sm" icon={RotateCcw} onClick={handleClearFilter}>
-              {t('authorityDashboard.clearFilter')}
-            </Button>
-          )}
-        </form>
+
+        {/* Filters Controls Row */}
+        <div className="pt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          {/* District dropdown (38 TN Districts) */}
+          <div>
+            <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+              {isTamil ? 'மாவட்டம்' : 'District'} (38)
+            </label>
+            <div className="relative">
+              <select
+                value={selectedDistrict}
+                onChange={(e) => handleDistrictChange(e.target.value)}
+                className="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium text-slate-800 py-2.5 px-3 pr-8 focus:border-primary-500 focus:bg-white focus:ring-2 focus:ring-primary-100 outline-none transition"
+              >
+                <option value="ALL">{isTamil ? 'அனைத்து 38 மாவட்டங்கள்' : 'All 38 Districts'}</option>
+                {districtsMeta.map((d) => (
+                  <option key={d.name} value={d.name}>
+                    {d.name} {isTamil ? `(${d.tamil_name})` : ''} {d.total_farms ? `[${d.total_farms}]` : ''}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2.5 top-3 pointer-events-none" />
+            </div>
+          </div>
+
+          {/* Village filter */}
+          <div>
+            <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+              {isTamil ? 'கிராமம் / பகுதி' : 'Village / Region'}
+            </label>
+            <input
+              type="text"
+              placeholder={isTamil ? "எ.கா. குளித்தலை..." : "e.g. Kulithalai, Sulur..."}
+              value={villageSearch}
+              onChange={(e) => setVillageSearch(e.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-800 py-2.5 px-3 focus:border-primary-500 focus:bg-white focus:ring-2 focus:ring-primary-100 outline-none transition"
+            />
+          </div>
+
+          {/* Manure Quality Status Filter */}
+          <div>
+            <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+              {isTamil ? 'உர தர நிலை' : 'Quality Status'}
+            </label>
+            <div className="relative">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium text-slate-800 py-2.5 px-3 pr-8 focus:border-primary-500 focus:bg-white focus:ring-2 focus:ring-primary-100 outline-none transition"
+              >
+                <option value="ALL">{isTamil ? 'அனைத்து நிலைகள்' : 'All Statuses'}</option>
+                <option value="normal">{isTamil ? 'இயல்பு (Normal)' : 'Normal Quality (Green)'}</option>
+                <option value="warning">{isTamil ? 'எச்சரிக்கை (Warning)' : 'Warning (Yellow)'}</option>
+                <option value="critical">{isTamil ? 'அவசர நிலை (Critical)' : 'Critical (Red)'}</option>
+                <option value="insufficient_data">{isTamil ? 'தகவல் இல்லை (Outdated)' : 'Outdated Data (Gray)'}</option>
+              </select>
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2.5 top-3 pointer-events-none" />
+            </div>
+          </div>
+
+          {/* Time Window */}
+          <div>
+            <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+              {isTamil ? 'கால அளவு' : 'Telemetry Window'}
+            </label>
+            <div className="relative">
+              <select
+                value={dateRange}
+                onChange={(e) => setDateRange(e.target.value)}
+                className="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium text-slate-800 py-2.5 px-3 pr-8 focus:border-primary-500 focus:bg-white focus:ring-2 focus:ring-primary-100 outline-none transition"
+              >
+                <option value="7">{isTamil ? 'கடந்த 7 நாட்கள்' : 'Last 7 Days'}</option>
+                <option value="14">{isTamil ? 'கடந்த 14 நாட்கள்' : 'Last 14 Days'}</option>
+                <option value="30">{isTamil ? 'கடந்த 30 நாட்கள்' : 'Last 30 Days'}</option>
+                <option value="60">{isTamil ? 'கடந்த 60 நாட்கள்' : 'Last 60 Days'}</option>
+                <option value="90">{isTamil ? 'கடந்த 90 நாட்கள்' : 'Last 90 Days'}</option>
+              </select>
+              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2.5 top-3 pointer-events-none" />
+            </div>
+          </div>
+
+          {/* Reset Filters button */}
+          <div className="flex items-end">
+            <button
+              onClick={handleResetFilters}
+              className="w-full py-2.5 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-600 flex items-center justify-center gap-1.5 transition"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>{isTamil ? 'வடிகட்டிகளை அழி' : 'Reset Filters'}</span>
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-        {stats.map((s) => (
-          <StatCard key={s.label} {...s} />
+      {/* Auth error banner */}
+      {authError && (
+        <div className="p-5 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-sm flex items-start justify-between gap-4 shadow-sm">
+          <div className="flex items-start gap-3">
+            <Building2 className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold">{authError}</p>
+              <p className="text-xs text-amber-700 mt-0.5">
+                {isTamil
+                  ? 'டெமோ அணுகல்: admin@smartmanure.gov.in / admin123 கொண்டு உள்நுழையவும்.'
+                  : 'Authority credentials required: admin@smartmanure.gov.in / admin123'}
+              </p>
+            </div>
+          </div>
+          <Button to="/authority-login" size="sm" variant="accent">
+            {isTamil ? 'அதிகாரி உள்நுழைவு' : 'Authority Login'}
+          </Button>
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────────────────
+          STATISTICS SECTION: Metric Cards Above Map
+      ────────────────────────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        {statCards.map((card, idx) => (
+          <div
+            key={idx}
+            className={`p-4 rounded-2xl border bg-white shadow-soft flex flex-col justify-between transition hover:shadow-card`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold text-slate-600 line-clamp-1">{card.title}</span>
+              <span className={`w-7 h-7 rounded-lg flex items-center justify-center ${card.color}`}>
+                <card.icon className="w-4 h-4" />
+              </span>
+            </div>
+            <div>
+              <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+                {card.value}
+              </p>
+              <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">{card.sub}</p>
+            </div>
+          </div>
         ))}
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6 mb-8">
-        <div className="lg:col-span-2 bg-white rounded-2xl shadow-card border border-slate-100 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="font-semibold text-slate-900">{isTamil ? 'கண்காணிக்கப்படும் மாவட்டங்கள்' : 'Districts Monitored'}</h3>
-              <p className="text-xs text-slate-500">{isTamil ? 'நேரலை டெலிமெட்ரி கொண்ட மாவட்டங்கள்' : 'Live districts with active GOBARdhan telemetry'}</p>
-            </div>
-            <span className="badge bg-primary-50 text-primary-700 text-xs">
-              {overview?.districts_covered?.length || 0} {isTamil ? 'பதிவுசெய்த மண்டலங்கள்' : 'Registered Zones'}
+      {/* ─────────────────────────────────────────────────────────────────────────
+          MAIN SECTION: Interactive Tamil Nadu Map
+      ────────────────────────────────────────────────────────────────────────── */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <h3 className="text-base font-bold text-slate-900">
+              {isTamil ? 'நேரலை புவிசார் கண்காணிப்பு பலகை' : 'Live Geospatial Telemetry Map'}
+            </h3>
+            <span className="text-xs text-slate-400">
+              ({farmsData.located_count} {isTamil ? 'வரைபடத்தில் உள்ள பண்ணைகள்' : 'mapped farms'})
             </span>
           </div>
-          <div className="flex flex-wrap gap-2 pt-2">
-            {overview?.districts_covered?.map((d) => (
-              <button
-                key={d}
-                onClick={() => { setDistrictInput(d); setActiveDistrict(d); }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-                  activeDistrict.toLowerCase() === d.toLowerCase()
-                    ? 'bg-primary-600 text-white shadow-sm'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                }`}
-              >
-                📍 {d}
-              </button>
-            ))}
+
+          <span className="text-xs text-slate-500 font-medium">
+            {isTamil ? 'எந்தவொரு பண்ணை குறியீட்டையும் கிளிக் செய்து முழு விவரங்களைப் பெறவும்.' : 'Click any farm marker or district boundary to inspect.'}
+          </span>
+        </div>
+
+        {/* Map Component */}
+        <TamilNaduMap
+          farms={farmsData.farms}
+          selectedDistrict={selectedDistrict}
+          districtsMeta={districtsMeta}
+          onSelectDistrict={handleDistrictChange}
+          onSelectFarm={(id) => setSelectedFarmId(id)}
+          selectedFarmId={selectedFarmId}
+          isTamil={isTamil}
+        />
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────────────────
+          BOTTOM SECTION 1: District Analytics & Charts
+      ────────────────────────────────────────────────────────────────────────── */}
+      <AuthorityCharts
+        statsData={mapStats}
+        isTamil={isTamil}
+        selectedDistrict={selectedDistrict}
+      />
+
+      {/* ─────────────────────────────────────────────────────────────────────────
+          BOTTOM SECTION 2: Regional Manure Quality Insights (Hotspots)
+      ────────────────────────────────────────────────────────────────────────── */}
+      <RegionalInsights
+        insights={regionalInsights}
+        loading={loading}
+        isTamil={isTamil}
+        onSelectDistrict={handleDistrictChange}
+        onSelectFarm={(id) => setSelectedFarmId(id)}
+      />
+
+      {/* ─────────────────────────────────────────────────────────────────────────
+          BOTTOM SECTION 3: Registered Farms Directory Table
+      ────────────────────────────────────────────────────────────────────────── */}
+      <div className="bg-white rounded-2xl shadow-card border border-slate-100 overflow-hidden">
+        <div className="p-6 pb-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 className="font-bold text-slate-900 text-base">
+              {isTamil ? 'தமிழ்நாடு பண்ணைகள் பட்டியல்' : 'Tamil Nadu Registered Farms Directory'}
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              {farmsData.farms.length} {isTamil ? 'பண்ணைகள் வடிகட்டலுக்குள் உள்ளன' : 'farms matching active filters'}
+            </p>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-card border border-slate-100 p-6">
-          <h3 className="font-semibold text-slate-900 mb-2">{isTamil ? 'அதிகாரத்துவ வழிகாட்டுதல்' : 'Authority Specification'}</h3>
-          <ul className="text-xs text-slate-600 space-y-2.5">
-            <li className="flex items-start gap-2">
-              <span className="text-emerald-500">✔</span>
-              <span><strong>{isTamil ? 'முழுமையான பார்வை:' : 'Global Scope:'}</strong> {isTamil ? 'அனைத்து பிராந்தியங்களின் நேரலை தரவு மேற்பார்வை.' : 'Read-only admin with global visibility.'}</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-emerald-500">✔</span>
-              <span><strong>{isTamil ? 'மாவட்ட வடிகட்டி:' : 'District Text Filter:'}</strong> {isTamil ? 'மாவட்ட வாரியாக உடனடியாக வடிகட்டும் வசதி.' : 'Instant filter by district name without RBAC complexity.'}</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-emerald-500">✔</span>
-              <span><strong>{isTamil ? 'தரவு நம்பகத்தன்மை:' : 'Provenance Tracking:'}</strong> {isTamil ? 'ICAR தரவு சார்ந்த நம்பகமான பயிர் கணிப்புகள்.' : 'Transparent ICAR data provenance on all crop predictions.'}</span>
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-2xl shadow-card border border-slate-100 overflow-hidden">
-        <div className="flex items-center justify-between p-6 pb-4">
-          <h3 className="font-semibold text-slate-900">
-            {isTamil ? `விவசாயிகள் கண்காணிப்பு டெலிமெட்ரி (${farmers.length} விவசாயிகள்)` : `Farmer Monitoring Telemetry (${farmers.length} Farmers)`}
-          </h3>
-          {activeDistrict && (
-            <span className="text-xs text-slate-500">{isTamil ? `"${activeDistrict}" மூலம் வடிகட்டப்பட்டது` : `Filtered by "${activeDistrict}"`}</span>
-          )}
-        </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-xs">
             <thead>
-              <tr className="text-left text-slate-400 border-y border-slate-100 bg-slate-50/50">
-                <th className="py-3 px-6 font-medium">{isTamil ? 'விவசாயி கணக்கு' : 'Farmer Account'}</th>
-                <th className="py-3 px-6 font-medium">{t('authorityDashboard.colDistrict')}</th>
-                <th className="py-3 px-6 font-medium">{t('authorityDashboard.colStatus')}</th>
-                <th className="py-3 px-6 font-medium">{t('cropPrediction.recommendedCrop')}</th>
-                <th className="py-3 px-6 font-medium">{isTamil ? 'சாதனங்கள்' : 'Devices'}</th>
-                <th className="py-3 px-6 font-medium">{isTamil ? 'கடைசி டெலிமெட்ரி' : 'Last Telemetry'}</th>
+              <tr className="text-left text-slate-400 border-b border-slate-100 bg-slate-50/50">
+                <th className="py-3 px-4 font-semibold">{isTamil ? 'பண்ணை எண்' : 'Farm ID'}</th>
+                <th className="py-3 px-4 font-semibold">{isTamil ? 'விவசாயி பெயர்' : 'Farmer Name'}</th>
+                <th className="py-3 px-4 font-semibold">{isTamil ? 'மாவட்டம் & கிராமம்' : 'District & Village'}</th>
+                <th className="py-3 px-4 font-semibold">{isTamil ? 'உர தரம்' : 'Quality Status'}</th>
+                <th className="py-3 px-4 font-semibold">{isTamil ? 'பரிந்துரை பயிர்' : 'Predicted Crop'}</th>
+                <th className="py-3 px-4 font-semibold">{isTamil ? 'சமீபத்திய அளவீடு' : 'Last Reading'}</th>
+                <th className="py-3 px-4 font-semibold text-right">{isTamil ? 'செயல்' : 'Action'}</th>
               </tr>
             </thead>
-            <tbody>
-              {farmers.map((f) => (
-                <tr key={f.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/60">
-                  <td className="py-3.5 px-6 font-medium text-slate-800">{f.email}</td>
-                  <td className="py-3.5 px-6 text-slate-600">📍 {f.district}</td>
-                  <td className="py-3.5 px-6">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${statusColor[f.status] || 'bg-slate-100 text-slate-600'}`}>
-                      {getStatusLabel(f.status)}
+            <tbody className="divide-y divide-slate-100">
+              {farmsData.farms.slice(0, 20).map((f) => (
+                <tr key={f.id} className="hover:bg-slate-50 transition">
+                  <td className="py-3 px-4 font-mono font-bold text-primary-600">{f.farm_id}</td>
+                  <td className="py-3 px-4 font-medium text-slate-900">{f.farmer_name}</td>
+                  <td className="py-3 px-4 text-slate-600">
+                    📍 {f.village}, {f.district}
+                  </td>
+                  <td className="py-3 px-4">
+                    <span
+                      className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                        f.status === 'normal'
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          : f.status === 'warning'
+                          ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                          : f.status === 'critical'
+                          ? 'bg-red-50 text-red-700 border border-red-200'
+                          : 'bg-slate-100 text-slate-600 border border-slate-200'
+                      }`}
+                    >
+                      {f.status_label}
                     </span>
                   </td>
-                  <td className="py-3.5 px-6 font-semibold text-primary-700">
-                    {isTamil && CROP_NAMES_TAMIL[f.predicted_crop] ? CROP_NAMES_TAMIL[f.predicted_crop] : f.predicted_crop}
+                  <td className="py-3 px-4 font-semibold text-primary-700">
+                    {isTamil ? (f.predicted_crop_tamil || f.predicted_crop) : f.predicted_crop}
                   </td>
-                  <td className="py-3.5 px-6 text-slate-600">{f.device_count} {isTamil ? 'சாதனம்(கள்)' : 'Device(s)'}</td>
-                  <td className="py-3.5 px-6 text-slate-400 text-xs">
-                    {f.latest_reading_time ? new Date(f.latest_reading_time).toLocaleDateString() : (isTamil ? 'அளவீடுகள் இல்லை' : 'No readings')}
+                  <td className="py-3 px-4 text-slate-500">
+                    {f.latest_reading?.timestamp
+                      ? new Date(f.latest_reading.timestamp).toLocaleDateString()
+                      : (isTamil ? 'அளவீடு இல்லை' : 'No telemetry')}
+                  </td>
+                  <td className="py-3 px-4 text-right">
+                    <div className="flex items-center justify-end gap-1.5">
+                      <a
+                        href={`/api/authority/farm/${f.id}/pdf`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:text-primary-600 hover:border-primary-300 transition"
+                        title={isTamil ? "PDF அறிக்கை பதிவிறக்குக" : "Download PDF Report"}
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                      </a>
+                      <button
+                        onClick={() => setSelectedFarmId(f.id)}
+                        className="px-2.5 py-1 rounded-lg bg-primary-50 hover:bg-primary-100 text-primary-700 font-semibold transition"
+                      >
+                        {isTamil ? 'விவரம்' : 'Inspect'} &rarr;
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
-              {farmers.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="py-10 text-center text-slate-400 text-sm">
-                    {isTamil ? 'விவசாயிகள் எதுவும் காணப்படவில்லை.' : 'No farmers found.'}
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* ─────────────────────────────────────────────────────────────────────────
+          SIDE PANEL & MODALS
+      ────────────────────────────────────────────────────────────────────────── */}
+      {selectedFarmId && (
+        <FarmDetailsPanel
+          farmId={selectedFarmId}
+          onClose={() => setSelectedFarmId(null)}
+          isTamil={isTamil}
+          onAlertResolved={() => fetchDashboardData()}
+        />
+      )}
+
+      <UnlocatedFarmsModal
+        isOpen={unlocatedModalOpen}
+        onClose={() => setUnlocatedModalOpen(false)}
+        unlocatedFarms={farmsData.unlocated_farms}
+        onSelectFarm={(id) => setSelectedFarmId(id)}
+        isTamil={isTamil}
+      />
     </div>
-  )
+  );
 }
