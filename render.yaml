@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: smart-manure-backend
+    runtime: python
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        value: sqlite:///./database/app.db
+    disk:
+      name: app-data
+      mountPath: /opt/render/project/src/database
+      sizeGB: 1

@@ -10,9 +10,7 @@ export default function MainLayout({ children }) {
   return (
     <div className="min-h-screen flex flex-col bg-surface">
       <Navbar />
-      <main className={`flex flex-col ${isAuthPage ? 'flex-1' : 'flex-1'}`}>
-        {children}
-      </main>
+      <main className="flex-1 flex flex-col">{children}</main>
       {!isAuthPage && <Footer />}
     </div>
   )

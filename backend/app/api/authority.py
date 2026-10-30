@@ -203,6 +203,7 @@ def compute_prediction_for_reading(reading: Optional[models.Reading]) -> Dict[st
 @router.get("/authority/districts")
 def get_tamil_nadu_districts(
     db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(security.require_authority)
 ):
     """
     Returns all 38 districts of Tamil Nadu with center coordinates and real-time farm counts.

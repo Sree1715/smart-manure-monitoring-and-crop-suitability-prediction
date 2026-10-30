@@ -3,6 +3,7 @@ node_modules/
 venv/
 __pycache__/
 *.pyc
+*.pyo
 
 # Build output
 build/
@@ -20,17 +21,15 @@ Thumbs.db
 # Logs
 *.log
 
-# Database files
+# Database files (never commit SQLite db)
 database/*.db
+*.db
 
-# IDE
-.vscode/
-.idea/
-
-# Python
+# Python packaging
 *.egg-info/
 *.egg
 .eggs/
 
-# Misc
-*.joblib
+# IDE
+.vscode/
+.idea/

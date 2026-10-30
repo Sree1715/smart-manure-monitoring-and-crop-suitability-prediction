@@ -29,7 +29,6 @@ import UnlocatedFarmsModal from '../components/UnlocatedFarmsModal.jsx';
 import AuthorityCharts from '../components/AuthorityCharts.jsx';
 import Button from '../components/Button.jsx';
 import Input from '../components/Input.jsx';
-import { TAMIL_NADU_DISTRICTS as STATIC_DISTRICTS } from '../utils/constants.js';
 
 export default function AuthorityDashboard() {
   const { t, i18n } = useTranslation();
@@ -217,10 +216,9 @@ export default function AuthorityDashboard() {
                 className="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium text-slate-800 py-2.5 px-3 pr-8 focus:border-primary-500 focus:bg-white focus:ring-2 focus:ring-primary-100 outline-none transition"
               >
                 <option value="ALL">{isTamil ? 'அனைத்து 38 மாவட்டங்கள்' : 'All 38 Districts'}</option>
-                {(districtsMeta.length > 0 ? districtsMeta : STATIC_DISTRICTS).map((d) => (
+                {districtsMeta.map((d) => (
                   <option key={d.name} value={d.name}>
-                    {isTamil ? `${d.name} (${d.tamil_name})` : d.name}
-                    {d.total_farms ? ` [${d.total_farms}]` : ''}
+                    {d.name} {isTamil ? `(${d.tamil_name})` : ''} {d.total_farms ? `[${d.total_farms}]` : ''}
                   </option>
                 ))}
               </select>

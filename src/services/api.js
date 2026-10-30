@@ -3,6 +3,9 @@ import axios from 'axios'
 export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api'
 
+// Detect if we are on a deployed/production environment
+const IS_PRODUCTION = import.meta.env.PROD && !window.location.hostname.includes('localhost')
+
 // ─── Friendly error classifier ───────────────────────────────────────────────
 export function getErrorMessage(error) {
   // Backend returned a structured error
@@ -19,7 +22,10 @@ export function getErrorMessage(error) {
 
   // Request was made but no response received → backend is down / CORS / network
   if (error.request || error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
-    return 'Cannot reach the server. Make sure the backend is running: npm run backend'
+    if (IS_PRODUCTION) {
+      return 'Cannot reach the server. The backend service may be starting up — please wait 30 seconds and try again.'
+    }
+    return 'Cannot reach the server. Make sure the backend is running locally.'
   }
 
   // Request cancelled due to timeout
@@ -29,6 +35,7 @@ export function getErrorMessage(error) {
 
   return error.message || 'An unexpected error occurred.'
 }
+
 
 // ─── Axios instance ───────────────────────────────────────────────────────────
 const api = axios.create({
