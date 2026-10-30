@@ -1,4 +1,5 @@
 import os
+import sys
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -10,8 +11,21 @@ API_PREFIX = "/api"
 # Database
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./database/app.db")
 
-# Security
-SECRET_KEY = os.getenv("SECRET_KEY", "SUPER_SECRET_KEY_GOBARDHAN_SIH1767_2026")
+# Security — SECRET_KEY must be set via environment variable in production.
+# Generate one with: python -c "import secrets; print(secrets.token_hex(32))"
+_SECRET_KEY = os.getenv("SECRET_KEY", "")
+if not _SECRET_KEY:
+    # In production (non-dev) refuse to start with no secret key
+    _is_dev = os.getenv("ENVIRONMENT", "production").lower() in ("dev", "development", "local")
+    if not _is_dev:
+        print("ERROR: SECRET_KEY environment variable is not set. "
+              "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\" "
+              "and add it to your Render/hosting environment variables.", file=sys.stderr)
+    # Use a random ephemeral key (safe for dev, but sessions reset on restart)
+    import secrets as _secrets
+    _SECRET_KEY = _secrets.token_hex(32)
+
+SECRET_KEY = _SECRET_KEY
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
 

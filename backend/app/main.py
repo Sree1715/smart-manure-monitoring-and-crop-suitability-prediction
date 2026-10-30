@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .db.database import Base, engine
 from .db import models
 from .api import auth, readings, upload, predict, authority
+import os
 
 # Ensure database tables exist
 models.Base.metadata.create_all(bind=engine)
@@ -13,14 +14,31 @@ app = FastAPI(
     description="IoT Manure Quality Monitoring and Scikit-Learn Crop Recommendation System"
 )
 
-# Enable CORS for frontend applications
+# ─── CORS ─────────────────────────────────────────────────────────────────────
+# IMPORTANT: `allow_credentials=True` cannot be combined with `allow_origins=["*"]`.
+# Browsers will block the request. We must list explicit origins.
+#
+# Set ALLOWED_ORIGINS env var (comma-separated) in Render:
+#   ALLOWED_ORIGINS=https://your-project.vercel.app,https://your-custom-domain.com
+#
+_raw_origins = os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000"
+)
+ALLOWED_ORIGINS = [o.strip().rstrip("/") for o in _raw_origins.split(",") if o.strip()]
+
+# Also allow all *.vercel.app subdomains as a fallback pattern
+ALLOW_ALL_ORIGINS = os.getenv("ALLOW_ALL_ORIGINS", "false").lower() == "true"
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=["*"] if ALLOW_ALL_ORIGINS else ALLOWED_ORIGINS,
+    allow_credentials=not ALLOW_ALL_ORIGINS,  # credentials incompatible with wildcard
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["Content-Length", "X-Request-ID"],
 )
+
 
 # Register routers
 app.include_router(auth.router, prefix="/api", tags=["Authentication"])

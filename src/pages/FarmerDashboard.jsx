@@ -99,16 +99,16 @@ const baseOptions = {
 function ChartCard({ title, subtitle, children, className = "", badge }) {
   return (
     <div
-      className={`bg-white rounded-2xl shadow-card border border-slate-100 p-6 ${className}`}
+      className={`bg-white rounded-2xl shadow-card border border-slate-100 p-4 sm:p-6 ${className}`}
     >
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <h3 className="font-semibold text-slate-900">{title}</h3>
-          <p className="text-sm text-slate-500">{subtitle}</p>
+      <div className="flex items-start sm:items-center justify-between mb-4 sm:mb-5 gap-2">
+        <div className="min-w-0">
+          <h3 className="font-semibold text-slate-900 text-sm sm:text-base truncate">{title}</h3>
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">{subtitle}</p>
         </div>
         {badge}
       </div>
-      <div className="h-64">{children}</div>
+      <div className="h-48 sm:h-64">{children}</div>
     </div>
   );
 }
@@ -367,24 +367,24 @@ export default function FarmerDashboard() {
       </div>
 
       <div className="bg-white rounded-2xl shadow-card border border-slate-100 overflow-hidden">
-        <div className="flex items-center justify-between p-6 pb-4">
-          <h3 className="font-semibold text-slate-900">
+        <div className="flex items-center justify-between p-4 sm:p-6 pb-3 sm:pb-4">
+          <h3 className="font-semibold text-slate-900 text-sm sm:text-base">
             {t("farmerDashboard.readingsTitle")}
           </h3>
           <Button variant="ghost" size="sm" icon={Download}>
             {isTamil ? "ஏற்றுமதி" : "Export"}
           </Button>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto -mx-0">
+          <table className="w-full text-xs sm:text-sm min-w-[480px]">
             <thead>
               <tr className="text-left text-slate-400 border-y border-slate-100">
-                <th className="py-3 px-6 font-medium">{t("farmerDashboard.colDate")}</th>
-                <th className="py-3 px-6 font-medium">{t("farmerDashboard.colType")}</th>
-                <th className="py-3 px-6 font-medium">{t("farmerDashboard.colPh")}</th>
-                <th className="py-3 px-6 font-medium">{t("farmerDashboard.colMoisture")}</th>
-                <th className="py-3 px-6 font-medium">{t("farmerDashboard.colTemp")}</th>
-                <th className="py-3 px-6 font-medium">{t("farmerDashboard.colNitrogen")}</th>
+                <th className="py-3 px-3 sm:px-6 font-medium">{t("farmerDashboard.colDate")}</th>
+                <th className="py-3 px-3 sm:px-6 font-medium">{t("farmerDashboard.colType")}</th>
+                <th className="py-3 px-3 sm:px-6 font-medium">{t("farmerDashboard.colPh")}</th>
+                <th className="py-3 px-3 sm:px-6 font-medium">{t("farmerDashboard.colMoisture")}</th>
+                <th className="py-3 px-3 sm:px-6 font-medium">{t("farmerDashboard.colTemp")}</th>
+                <th className="py-3 px-3 sm:px-6 font-medium">{t("farmerDashboard.colNitrogen")}</th>
               </tr>
             </thead>
             <tbody>
@@ -393,18 +393,18 @@ export default function FarmerDashboard() {
                   key={i}
                   className="border-b border-slate-50 last:border-0 hover:bg-slate-50/60"
                 >
-                  <td className="py-3.5 px-6 text-slate-600">{r.date}</td>
-                  <td className="py-3.5 px-6">
+                  <td className="py-3 px-3 sm:px-6 text-slate-600 whitespace-nowrap">{r.date}</td>
+                  <td className="py-3 px-3 sm:px-6">
                     <span
                       className={`badge ${r.type === "Liquid" ? "bg-primary-50 text-primary-700" : "bg-secondary-50 text-secondary-700"}`}
                     >
                       {r.type === "Liquid" ? t("farmerDashboard.typeLiquid") : t("farmerDashboard.typeSolid")}
                     </span>
                   </td>
-                  <td className="py-3.5 px-6 text-slate-600">{r.ph}</td>
-                  <td className="py-3.5 px-6 text-slate-600">{r.moisture}</td>
-                  <td className="py-3.5 px-6 text-slate-600">{r.temp}</td>
-                  <td className="py-3.5 px-6 text-slate-600">{r.nitrogen}</td>
+                  <td className="py-3 px-3 sm:px-6 text-slate-600">{r.ph}</td>
+                  <td className="py-3 px-3 sm:px-6 text-slate-600">{r.moisture}</td>
+                  <td className="py-3 px-3 sm:px-6 text-slate-600">{r.temp}</td>
+                  <td className="py-3 px-3 sm:px-6 text-slate-600">{r.nitrogen}</td>
                 </tr>
               ))}
             </tbody>

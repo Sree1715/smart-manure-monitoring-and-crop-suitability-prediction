@@ -6,10 +6,18 @@ services:
     startCommand: uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: SECRET_KEY
-        generateValue: true
+        generateValue: true          # Render auto-generates a secure random value
       - key: DATABASE_URL
-        value: sqlite:///./database/app.db
+        value: sqlite:////data/app.db  # absolute path inside the disk mount
+      - key: ALLOWED_ORIGINS
+        # ⚠️  Replace with your actual Vercel URL after first deployment
+        value: https://crop-monitoring-and-prediction.vercel.app,http://localhost:5173
+      - key: ALLOW_ALL_ORIGINS
+        value: "false"
+      - key: ENVIRONMENT
+        value: production
     disk:
       name: app-data
-      mountPath: /opt/render/project/src/database
+      mountPath: /data
       sizeGB: 1
+    healthCheckPath: /api/health

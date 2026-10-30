@@ -5,9 +5,14 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    /* Prevent horizontal overflow on all mobile screen widths */
+    overflow-x: hidden;
   }
   body {
     @apply bg-surface text-slate-800 font-sans antialiased;
+    overflow-x: hidden;
+    /* Ensure full width is used on small screens */
+    min-width: 320px;
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-display text-slate-900;
@@ -33,6 +38,7 @@
     @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium;
   }
 }
+
 
 ::-webkit-scrollbar {
   width: 10px;
