@@ -1,0 +1,42 @@
+{
+  "name": "smart-manure-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "backend": "python -m uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8000",
+    "start": "concurrently -k -n BACKEND,FRONTEND -c cyan,green \"npm run backend\" \"npm run dev\"",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "dev:backend": "python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000"
+  },
+  "dependencies": {
+    "axios": "^1.7.7",
+    "chart.js": "^4.4.4",
+    "i18next": "^26.4.5",
+    "i18next-browser-languagedetector": "^8.2.1",
+    "leaflet": "^1.9.4",
+    "lucide-react": "^0.441.0",
+    "react": "^18.3.1",
+    "react-chartjs-2": "^5.2.0",
+    "react-dom": "^18.3.1",
+    "react-i18next": "^17.0.16",
+    "react-router-dom": "^6.26.2"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^9.2.5",
+    "eslint": "^8.57.0",
+    "eslint-plugin-react": "^7.35.0",
+    "eslint-plugin-react-hooks": "^4.6.2",
+    "eslint-plugin-react-refresh": "^0.4.11",
+    "postcss": "^8.4.45",
+    "tailwindcss": "^3.4.10",
+    "vite": "^5.4.3"
+  }
+}

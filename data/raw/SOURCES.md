@@ -1,0 +1,4 @@
+| File name | Source title | URL | Licence | Year | Rows | Columns & Units | Measured or Synthetic | Date downloaded | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| icar_crop_requirements.csv | ICAR Agronomic Package of Practices | https://icar.org.in | Open Government Data (OGD) India | 2023 | 8 | crop (str), ph_min/max, n_kg_ha, p_kg_ha, p_basis (P2O5), k_kg_ha, k_basis (K2O), temp_min_c, temp_max_c | Measured / Official Standard | 2026-10-11 | Standard crop nutrient guidelines across Indian agro-climatic zones |
+| icar_manure_composition.csv | ICAR Organic Farming & Slurry Standards | https://icar.org.in | Open Government Data (OGD) India | 2022 | 4 | manure_type, n/p/k_pct_min/max, p/k_basis, moisture_pct, organic_carbon_pct, ph_min/max | Measured / Official Standard | 2026-10-11 | Slurry and manure composition baselines for GOBARdhan applications |
