@@ -8,8 +8,10 @@ load_dotenv()
 APP_NAME = "Smart Manure Monitoring and Crop Suitability Prediction"
 API_PREFIX = "/api"
 
-# Database
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./database/app.db")
+# Database — resolve absolute default path to root database/app.db
+_ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_DEFAULT_DB_PATH = os.path.join(_ROOT_DIR, "database", "app.db")
+DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{_DEFAULT_DB_PATH.replace(os.sep, '/')}")
 
 # Security — SECRET_KEY must be set via environment variable in production.
 # Generate one with: python -c "import secrets; print(secrets.token_hex(32))"

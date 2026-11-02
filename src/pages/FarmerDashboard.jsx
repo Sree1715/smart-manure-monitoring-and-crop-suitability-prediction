@@ -10,6 +10,7 @@ import {
   Bell,
   Plus,
   Sprout,
+  PlayCircle,
 } from "lucide-react";
 import {
   Chart as ChartJS,
@@ -290,8 +291,8 @@ export default function FarmerDashboard() {
           <button className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:text-primary-600 hover:border-primary-200 shadow-soft">
             <Bell className="w-4.5 h-4.5" />
           </button>
-          <Button icon={Plus} size="md">
-            {t("farmerDashboard.addReading")}
+          <Button icon={PlayCircle} size="md" to="/measurement-session">
+            {isTamil ? "அளவீட்டை தொடங்கவும்" : "Start Measurement"}
           </Button>
         </div>
       </div>

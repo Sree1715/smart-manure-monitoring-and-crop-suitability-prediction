@@ -71,12 +71,25 @@ export default function Register() {
     setOtpSending(true);
 
     try {
-      const res = await authService.sendOtp(form.email);
+      const res = await authService.sendOtp(form.email.trim().toLowerCase());
       if (res.data?.success) {
         setOtpSent(true);
-        setMessage(t("auth.otpSentSuccess"));
+        if (res.data?.email_dispatched) {
+          setMessage(
+            isTamil
+              ? `சரிபார்ப்பு குறியீடு உங்கள் ஜிமெயிலுக்கு (${form.email}) அனுப்பப்பட்டது! உங்கள் இன்பாக்ஸ் அல்லது ஸ்பேமை பார்க்கவும்.`
+              : `Verification code sent to your Gmail (${form.email})! Please check your inbox and spam folder.`
+          );
+        } else {
+          setMessage(
+            isTamil
+              ? "சரிபார்ப்பு குறியீடு உருவாக்கப்பட்டது. கீழே உள்ள குறியீட்டை சரிபார்க்கவும்."
+              : "Verification code generated! You can verify using the code below."
+          );
+        }
         if (res.data?.dev_otp) {
           setDevOtpHint(res.data.dev_otp);
+          setOtpCode(res.data.dev_otp);
         }
       }
     } catch (err) {
@@ -148,6 +161,7 @@ export default function Register() {
         if (response.data?.user) {
           localStorage.setItem("user", JSON.stringify(response.data.user));
         }
+        window.dispatchEvent(new Event("storage"));
 
         setMessage(
           isTamil

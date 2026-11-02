@@ -12,6 +12,7 @@ import CropPrediction from "./pages/CropPrediction.jsx";
 import Reports from "./pages/Reports.jsx";
 import Settings from "./pages/Settings.jsx";
 import Contact from "./pages/Contact.jsx";
+import MeasurementSession from "./pages/MeasurementSession.jsx";
 import NotFound from "./pages/NotFound.jsx";
 
 export default function App() {
@@ -28,6 +29,7 @@ export default function App() {
         <Route path="/reports" element={<Reports />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="/measurement-session" element={<MeasurementSession />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </MainLayout>

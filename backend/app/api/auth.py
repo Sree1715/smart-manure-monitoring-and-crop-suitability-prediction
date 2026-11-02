@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from ..db import database, models
 from ..schemas import schemas
 from ..core import security
@@ -18,44 +19,48 @@ OTP_STORE = {}
 
 def send_email_otp(recipient_email: str, otp_code: str):
     """
-    Sends an email with the OTP using configured SMTP credentials if available.
-    Always logs the OTP clearly for developer/demo visibility.
+    Sends an email with the OTP using configured SMTP credentials (e.g. Gmail SMTP).
+    Supports Gmail 16-character App Passwords with or without spaces, and both
+    STARTTLS (port 587) and SSL (port 465).
     """
-    smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+    recipient_email = recipient_email.strip().lower()
+    smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com").strip()
     smtp_port = int(os.getenv("SMTP_PORT", 587))
-    smtp_user = os.getenv("SMTP_USER", "")
-    smtp_password = os.getenv("SMTP_PASSWORD", "")
-    sender_email = os.getenv("SMTP_FROM", smtp_user or "no-reply@smartmanure.gov.in")
+    smtp_user = os.getenv("SMTP_USER", "").strip()
+    # Strip spaces in case user pasted 16-char Google App Password as 'xxxx xxxx xxxx xxxx'
+    smtp_password = os.getenv("SMTP_PASSWORD", "").strip().replace(" ", "")
+    sender_email = smtp_user if smtp_user else os.getenv("SMTP_FROM", "no-reply@smartmanure.gov.in").strip()
 
     print(f"\n==========================================")
     print(f"[EMAIL OTP DISPATCH] To: {recipient_email}")
     print(f"OTP Code: {otp_code}")
     print(f"Valid for: 10 minutes")
+    print(f"SMTP Server: {smtp_server}:{smtp_port} | User: {smtp_user or 'None (Simulated Mode)'}")
     print(f"==========================================\n")
 
     if smtp_user and smtp_password:
         try:
             msg = MIMEMultipart("alternative")
-            msg["Subject"] = f"Your Smart Manure Portal Verification Code: {otp_code}"
-            msg["From"] = sender_email
+            msg["Subject"] = f"Your Smart Manure Verification Code: {otp_code}"
+            msg["From"] = f"Smart Manure Portal <{sender_email}>"
             msg["To"] = recipient_email
 
             text_content = f"Your Smart Manure farmer registration OTP is: {otp_code}. Valid for 10 minutes."
             html_content = f"""
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
-                <div style="background: linear-gradient(135deg, #16a34a, #0d9488); padding: 16px 24px; border-radius: 8px; text-align: center; color: white;">
+                <div style="background: linear-gradient(135deg, #16a34a, #0d9488); padding: 18px 24px; border-radius: 8px; text-align: center; color: white;">
                     <h2 style="margin: 0; font-size: 20px;">🌱 Smart Manure Monitoring</h2>
-                    <p style="margin: 4px 0 0; font-size: 13px; opacity: 0.9;">GOBARdhan Farmer Verification</p>
+                    <p style="margin: 4px 0 0; font-size: 13px; opacity: 0.9;">GOBARdhan Farmer Verification Code</p>
                 </div>
                 <div style="padding: 24px 8px; text-align: center;">
                     <p style="color: #475569; font-size: 15px; margin-bottom: 20px;">
-                        Use the one-time verification code below to complete your farmer registration:
+                        Use the one-time verification code below to verify your Gmail address and complete registration:
                     </p>
                     <div style="display: inline-block; background-color: #f0fdf4; border: 2px dashed #16a34a; border-radius: 8px; padding: 14px 28px; margin-bottom: 20px;">
                         <span style="font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #15803d;">{otp_code}</span>
                     </div>
                     <p style="color: #64748b; font-size: 13px; margin: 0;">
-                        This code will expire in 10 minutes. If you did not request this, please ignore this email.
+                        This code will expire in 10 minutes. If you did not request this code, you can safely ignore this email.
                     </p>
                 </div>
                 <div style="border-top: 1px solid #e2e8f0; padding-top: 16px; text-align: center; color: #94a3b8; font-size: 11px;">
@@ -66,17 +71,24 @@ def send_email_otp(recipient_email: str, otp_code: str):
             msg.attach(MIMEText(text_content, "plain"))
             msg.attach(MIMEText(html_content, "html"))
 
-            with smtplib.SMTP(smtp_server, smtp_port, timeout=10) as server:
-                server.starttls()
-                server.login(smtp_user, smtp_password)
-                server.sendmail(sender_email, recipient_email, msg.as_string())
-            print(f"[OTP Email] Successfully dispatched via SMTP to {recipient_email}")
+            if smtp_port == 465:
+                with smtplib.SMTP_SSL(smtp_server, smtp_port, timeout=12) as server:
+                    server.login(smtp_user, smtp_password)
+                    server.sendmail(sender_email, [recipient_email], msg.as_string())
+            else:
+                with smtplib.SMTP(smtp_server, smtp_port, timeout=12) as server:
+                    server.starttls()
+                    server.login(smtp_user, smtp_password)
+                    server.sendmail(sender_email, [recipient_email], msg.as_string())
+
+            print(f"[OTP Email] Successfully dispatched via Gmail SMTP to {recipient_email}")
             return True, "Email sent successfully"
         except Exception as e:
-            print(f"[OTP Email] SMTP delivery notice: {e}. OTP stored for registration.")
-            return False, str(e)
+            err_msg = str(e)
+            print(f"[OTP Email] SMTP delivery error: {err_msg}")
+            return False, f"SMTP delivery failed: {err_msg}"
     else:
-        return True, "Simulated email delivery (logged to server console)"
+        return False, "SMTP credentials (SMTP_USER / SMTP_PASSWORD) not configured in environment. Using demo simulated OTP."
 
 @router.post("/auth/send-otp")
 def send_otp(request: schemas.SendOtpRequest, db: Session = Depends(database.get_db)):
@@ -95,9 +107,11 @@ def send_otp(request: schemas.SendOtpRequest, db: Session = Depends(database.get
     
     return {
         "success": True,
-        "message": f"Verification OTP sent to {email}",
+        "message": f"Verification OTP sent to your Gmail ({email})" if sent else f"Verification code generated ({msg})",
         "email": email,
-        "dev_otp": code  # Provided so development testing and demo always works smoothly
+        "email_dispatched": sent,
+        "delivery_mode": "smtp" if sent else "simulated",
+        "dev_otp": code  # Provided so registration never blocks during demos or when SMTP is not configured
     }
 
 @router.post("/auth/verify-otp")
@@ -182,8 +196,10 @@ def register(user_data: schemas.UserCreate, db: Session = Depends(database.get_d
 
 
 def _authenticate(user_data: schemas.UserCreate, expected_role: str = None, db: Session = Depends(database.get_db)):
-    user = db.query(models.User).filter(models.User.email == user_data.email).first()
-    if not user or not security.verify_password(user_data.password, user.password_hash):
+    clean_email = user_data.email.strip().lower() if user_data.email else ""
+    clean_password = user_data.password.strip() if user_data.password else ""
+    user = db.query(models.User).filter(func.lower(models.User.email) == clean_email).first()
+    if not user or not security.verify_password(clean_password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
     
     if expected_role and user.role != expected_role:
@@ -200,8 +216,10 @@ def _authenticate(user_data: schemas.UserCreate, expected_role: str = None, db: 
         "user": {
             "id": user.id,
             "email": user.email,
+            "name": user.name or ("Farmer" if user.role == "farmer" else "TN Agricultural Officer"),
             "role": user.role,
-            "district": user.district
+            "district": user.district or "Karur",
+            "farm_id": user.farm_id or "TN-KAR-1001"
         }
     }
 

@@ -1,12 +1,20 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .db.database import Base, engine
+from .db.database import Base, engine, SessionLocal
 from .db import models
+from .db.auto_seed import ensure_seed_data
 from .api import auth, readings, upload, predict, authority
 import os
 
-# Ensure database tables exist
+# Ensure all database tables exist.
 models.Base.metadata.create_all(bind=engine)
+
+# Automatically seed default authority and demo farmers on startup
+try:
+    with SessionLocal() as db_session:
+        ensure_seed_data(db_session)
+except Exception as _e:
+    print(f"[!] Startup seed notice: {_e}")
 
 app = FastAPI(
     title="GOBARdhan - Smart Manure Monitoring and Crop Suitability Prediction API",
@@ -15,25 +23,12 @@ app = FastAPI(
 )
 
 # ─── CORS ─────────────────────────────────────────────────────────────────────
-# IMPORTANT: `allow_credentials=True` cannot be combined with `allow_origins=["*"]`.
-# Browsers will block the request. We must list explicit origins.
-#
-# Set ALLOWED_ORIGINS env var (comma-separated) in Render:
-#   ALLOWED_ORIGINS=https://your-project.vercel.app,https://your-custom-domain.com
-#
-_raw_origins = os.getenv(
-    "ALLOWED_ORIGINS",
-    "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000"
-)
-ALLOWED_ORIGINS = [o.strip().rstrip("/") for o in _raw_origins.split(",") if o.strip()]
-
-# Also allow all *.vercel.app subdomains as a fallback pattern
-ALLOW_ALL_ORIGINS = os.getenv("ALLOW_ALL_ORIGINS", "false").lower() == "true"
-
+# Allows seamless access from Vercel deployments (*.vercel.app), custom domains,
+# localhost, and mobile devices on local WiFi without CORS errors.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"] if ALLOW_ALL_ORIGINS else ALLOWED_ORIGINS,
-    allow_credentials=not ALLOW_ALL_ORIGINS,  # credentials incompatible with wildcard
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
     expose_headers=["Content-Length", "X-Request-ID"],

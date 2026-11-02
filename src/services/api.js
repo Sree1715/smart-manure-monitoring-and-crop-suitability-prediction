@@ -1,26 +1,16 @@
 /**
- * api.js — Production-ready API client
- *
- * HOW THE BASE URL IS RESOLVED (in order):
- *   1. VITE_API_BASE_URL env var (set this in Vercel dashboard for production)
- *   2. If running locally on localhost/127.0.0.1 → http://127.0.0.1:8000/api
- *   3. If somehow running on a deployed host with NO env var set → we detect
- *      the current origin and append /api, which allows Vercel rewrites to proxy.
- *
- * SETUP REQUIRED (production):
- *   Vercel Dashboard → Project → Settings → Environment Variables
- *     VITE_API_BASE_URL = https://<your-render-service>.onrender.com/api
+ * api.js — Production-ready API client for Smart Manure Portal
  */
 import axios from 'axios'
 
 // ─── Resolve API base URL ─────────────────────────────────────────────────────
 function resolveApiBaseUrl() {
-  // Explicit override (set in Vercel env vars)
+  // 1. Explicit override from environment variable (set in Vercel project settings)
   if (import.meta.env.VITE_API_BASE_URL) {
-    return import.meta.env.VITE_API_BASE_URL.replace(/\/$/, '') // strip trailing slash
+    return import.meta.env.VITE_API_BASE_URL.replace(/\/$/, '')
   }
 
-  // Local development fallback
+  // 2. Local development fallback
   if (typeof window !== 'undefined') {
     const host = window.location.hostname
     if (host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0') {
@@ -28,10 +18,8 @@ function resolveApiBaseUrl() {
     }
   }
 
-  // Deployed but VITE_API_BASE_URL not set yet — use relative path so
-  // the vercel.json rewrite rule can forward /api/* to the backend.
-  // This will still fail until the env var is set, but gives a clear error.
-  return '/api'
+  // 3. Deployed on Vercel: use direct Render backend or relative /api (proxied via vercel.json)
+  return 'https://smart-manure-backend.onrender.com/api'
 }
 
 export const API_BASE_URL = resolveApiBaseUrl()
@@ -44,6 +32,15 @@ export const IS_PRODUCTION =
 
 // ─── Friendly error classifier ───────────────────────────────────────────────
 export function getErrorMessage(error) {
+  // Check if response is raw HTML (e.g. Vercel 404 or index.html fallback)
+  if (
+    error.response &&
+    typeof error.response.data === 'string' &&
+    error.response.data.toLowerCase().includes('<!doctype html')
+  ) {
+    return 'The backend service is starting up on Render. Free-tier servers take ~30-40 seconds on cold start. Please wait a moment and try again.'
+  }
+
   // Backend returned a structured error
   if (error.response) {
     const detail = error.response.data?.detail
@@ -53,22 +50,22 @@ export function getErrorMessage(error) {
     if (error.response.status === 403)
       return error.response.data?.detail || 'Access denied for this portal.'
     if (error.response.status === 404)
-      return 'Endpoint not found. Please check backend version.'
-    if (error.response.status >= 500) return 'Server error. Please try again in a moment.'
+      return 'API endpoint not found. Please verify backend connection.'
+    if (error.response.status >= 500) return 'Server error. The server may be restarting — please try again in a moment.'
     return `Request failed (${error.response.status}).`
   }
 
-  // No response → network failure / CORS / backend down
+  // No response → network failure / CORS / cold start
   if (error.request || error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
     if (IS_PRODUCTION) {
-      return 'Cannot reach the server. The backend service may be starting up — please wait 30 seconds and try again.'
+      return 'Cannot reach the backend server. Render free instances sleep after inactivity and need ~30 seconds to wake up. Please wait a moment and retry.'
     }
     return 'Cannot reach the server. Make sure the backend is running locally (npm run backend).'
   }
 
   // Timeout
   if (error.code === 'ECONNABORTED') {
-    return 'Request timed out. The server took too long to respond.'
+    return 'Server took longer than expected to respond. If it is cold-starting on Render, please retry now.'
   }
 
   return error.message || 'An unexpected error occurred.'
@@ -78,7 +75,7 @@ export function getErrorMessage(error) {
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 20000, // 20s — generous for cold-start on Render free tier
+  timeout: 45000, // 45s — generous for Render free-tier cold-start
 })
 
 // ─── Request interceptor: attach JWT ─────────────────────────────────────────
@@ -91,9 +88,22 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
-// ─── Response interceptor: normalise errors ───────────────────────────────────
+// ─── Response interceptor: normalise errors & detect HTML responses ───────────
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // If an API endpoint accidentally returned HTML (e.g. index.html SPA rewrite)
+    if (
+      typeof response.data === 'string' &&
+      response.data.toLowerCase().includes('<!doctype html')
+    ) {
+      const err = new Error('Received HTML response instead of JSON API response')
+      err.response = response
+      err.friendlyMessage =
+        'Backend server is currently warming up on Render. Please wait 15 seconds and try again.'
+      return Promise.reject(err)
+    }
+    return response
+  },
   (error) => {
     // Auto-clear stale tokens on 401
     if (error.response?.status === 401) {
@@ -108,11 +118,10 @@ api.interceptors.response.use(
 // ─── Backend health check ─────────────────────────────────────────────────────
 export async function checkBackendHealth() {
   try {
-    // Build health URL from API_BASE_URL — strip /api suffix
     const healthUrl = API_BASE_URL.endsWith('/api')
       ? `${API_BASE_URL.slice(0, -4)}/api/health`
       : `${API_BASE_URL}/health`
-    const res = await axios.get(healthUrl, { timeout: 8000 })
+    const res = await axios.get(healthUrl, { timeout: 15000 })
     return res.data?.status === 'healthy'
   } catch {
     return false
